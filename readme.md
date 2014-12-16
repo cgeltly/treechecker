@@ -17,7 +17,7 @@ The Laravel Eloquent ORM makes querying a breeze and allows for rapid developmen
 
 ### Initialization
 
-- Clone the repository with git (`git clone https://github.com/UUDigitalHumanitieslab/gedcomcheck.git`)
+- Clone the repository with git (`git clone https://github.com/cgeltly/treechecker.git`)
 - Run `composer install` to install the dependencies. 
 
 #### Database seeding
