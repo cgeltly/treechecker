@@ -7,7 +7,7 @@
 worldwide. It allows anyone to upload their GEDCOM family tree file and to check for 
 irregularities in the dates, events, relationships and coding of the file.
 The aim is to encourage people to correct errors in their files and bring their family tree
-research up to higher standard.
+research up to a higher standard.
 </p> 
 <p>
     TreeChecker is maintained by researchers at Utrecht University, who are using genealogical data 
