@@ -1,25 +1,29 @@
 <?php
-// Class that defines an event details object
-//
-// webtrees: Web based Family History software
-// Copyright (C) 2014 webtrees development team.
-//
-// Derived from PhpGedView
-// Copyright (C) 2008 PGV Development Team.  All rights reserved.
-//
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+/* 
+ * TreeChecker: Error recognition for genealogical trees
+ * 
+ * Copyright (C) 2014 Digital Humanities Lab, Faculty of Humanities, Universiteit Utrecht
+ * Corry Gellatly <corry.gellatly@gmail.com>
+ * Martijn van der Klis <M.H.vanderKlis@uu.nl>
+ * 
+ * Class that defines an event details object
+ *
+ * Derived from webtrees: Web based Family History software
+ * Copyright (C) 2014 webtrees development team.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 if (!defined('WT_WEBTREES')) {
 	header('HTTP/1.0 403 Forbidden');
@@ -38,6 +42,9 @@ class WT_Fact {
 	private $date     = null;  // The WT_Date object for the "2 DATE ..." attribute
 	private $place    = null;  // The WT_Place object for the "2 PLAC ..." attribute
 
+        private $lati     = null;  // The WT_Lati object for the "2 LATI ..." attribute
+	private $long     = null;  // The WT_Long object for the "2 LONG ..." attribute        
+        
 	// Temporary(!) variables that are used by other scripts
 	public $temp      = null; // Timeline controller
 	public $sortOrder = 0;    // sort_facts()
@@ -148,6 +155,22 @@ class WT_Fact {
 		return $this->place;
 	}
 
+	// The latitude where the event occured.
+	public function getLati() {
+		if ($this->lati === null) {
+			$this->lati = new WT_Place($this->getAttribute('LATI'), $this->getParent()->getGedcomId());
+		}
+                return $this->lati;
+	}        
+
+	// The longitude where the event occured.
+	public function getLong() {
+		if ($this->long === null) {
+			$this->long = new WT_Place($this->getAttribute('LONG'), $this->getParent()->getGedcomId());
+		}
+		return $this->long;
+	}  
+        
 	// We can call this function many times, especially when sorting,
 	// so keep a copy of the date.
 	public function getDate() {

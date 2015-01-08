@@ -472,6 +472,12 @@ class Import
                                 ($level + 2) . " LONG " . ($match[9] . (round($match[6] + ($match[7] / 60) + ($match[8] / 3600), 4)));
                     }
                     break;
+                case '_PLAC':
+                    $tag = '_PLAC';
+                    break;
+                case '_PLAC_DEFN':
+                    $tag = '_PLAC_DEFN';
+                    break;                   
                 case 'POSTAL_CODE':
                     $tag = 'POST';
                     break;

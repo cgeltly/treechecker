@@ -24,6 +24,8 @@ class CreateEventsTable extends Migration
             $table->date('date')->nullable();
             $table->string('datestring')->nullable();
             $table->string('place')->nullable();
+            $table->double('lati')->nullable();            
+            $table->double('long')->nullable();               
             $table->text('gedcom');
             $table->timestamps();
             

@@ -11,7 +11,7 @@ $('.progress-bar').css('width', value + '%');
 $('.progress-bar').html(value + '%');
 if (value === 100)
 {
-// Parsing completed! :)
+// Parsing completed
 $('.parse-message').html("{{ Lang::get('gedcom/gedcoms/actions.parsing_completed') }}");
 setTimeout(function () {
 location.reload();

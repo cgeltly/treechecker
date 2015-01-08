@@ -39,6 +39,7 @@ class ParseController extends BaseController
         // Delete the related individuals, families and errors
         $gedcom->individuals()->delete();
         $gedcom->families()->delete();
+        $gedcom->geocodes()->delete();
         $gedcom->errors()->delete();
         Session::put('progress', 2);
         Session::save();
@@ -146,7 +147,9 @@ class ParseController extends BaseController
         // Standardise gedcom format
         $gedrec = \Webtrees\Import::reformat_record_import($gedcom);
         // import different types of records
-        if (preg_match('/^0 @(' . WT_REGEX_XREF . ')@ (' . WT_REGEX_TAG . ')/', $gedrec, $match))
+
+        
+        if (preg_match('/^0 @(' . WT_REGEX_XREF . ')@? (' . WT_REGEX_TAG . ')/', $gedrec, $match))
         {
             list(, $xref, $type) = $match;
             // check for a _UID, if the record doesn't have one, add one
@@ -159,6 +162,11 @@ class ParseController extends BaseController
         {
             $type = $match[1];
             $xref = $type; // For HEAD/TRLR, use type as pseudo XREF.
+        }
+        elseif (preg_match('/0 (_PLAC |_PLAC_DEFN)/', $gedrec, $match))
+        {
+            $type = '_PLAC';
+            $xref = $type; // Again use type as pseudo XREF.
         }
         else
         {
@@ -182,6 +190,9 @@ class ParseController extends BaseController
             case 'FAM':
                 $this->processFamily($xref, $gedrec, $gedcom_id);
                 break;
+            case '_PLAC':
+                $this->processGeocode($gedrec, $gedcom_id);
+                break;
             default:
                 break;
         }
@@ -200,7 +211,7 @@ class ParseController extends BaseController
         $name = $record->getAllNames()[0];
         $givn = trim($name["givn"]);
         $surname = trim($name["surname"]);
-
+        
         $individual = new GedcomIndividual();
         $individual->gedcom_id = $gedcom_id;
         $individual->first_name = $givn;
@@ -210,7 +221,7 @@ class ParseController extends BaseController
         $individual->gedcom = $gedrec;
         $individual->save();
 
-        $this->processEvents($record, $individual->id);
+        $this->processEvents($record, $individual->id);        
     }
 
     /**
@@ -263,6 +274,173 @@ class ParseController extends BaseController
         $this->processEvents($record, NULL, $family->id);
     }
 
+    
+    /**
+     * Create Geocode (place definition) record 
+     * @param string $gedrec
+     * @param int $gedcom_id
+     */
+    private function processGeocode($gedrec, $gedcom_id)
+    {
+
+        if (preg_match('/(?:0 _PLAC) +(.+)/', $gedrec, $match))   
+        {        
+
+            //'RootsMagic' and 'Next Generation of Genealogy Sitebuilding' 
+            //GEDCOM exports have separate place definitions under the _PLAC tag, 
+            //which may be linked to events via the place name, e.g.
+
+            //0 @I1235@ INDI
+            //1 BIRT
+            //2 DATE 1689
+            //2 PLAC Brögbern
+            //
+            //0 _PLAC Brögbern
+            //1 MAP
+            //2 LATI N52,5666667
+            //2 LONG E7,3666667
+
+            $place = $match[1];
+
+            //Match LATI/LONG in RootsMagic files, which use N,S,W,E in the coordinates 
+            if (preg_match('/\n2 LATI (N|S)(\d{1,2})(,|.)(\d{1,7})/', $gedrec, $match))                    
+            {
+                //$match[1] = N or S; $match[2] = degree integer; $match[3] = decimal point/comma 
+                //$match[4] = numbers after decimal
+
+                //convert to numeric latitude - negative if southern hemisphere
+                switch ($match[1])
+                {
+                    case 'N':
+                        $latitude = $match[2] . '.' . $match[4];
+                        break;
+                    case 'S':
+                        $latitude = ($match[2]*-1) . '.' . $match[4];
+                        break;
+                    default:
+                        break;
+                }                        
+            }                
+
+            if (preg_match('/\n2 LONG (W|E)(\d{1,3})(,|.)(\d{1,7})/', $gedrec, $match))                    
+            {
+                //$match[1] = N or S; $match[2] = degree integer; $match[3] = decimal point/comma 
+                //$match[4] = numbers after decimal
+
+                //convert to numeric latitude - negative if western hemisphere
+                switch ($match[1])
+                {
+                    case 'E':
+                        $longitude = $match[2] . '.' . $match[4];
+                        break;
+                    case 'W':
+                        $longitude = ($match[2]*-1) . '.' . $match[4];
+                        break;
+                    default:
+                        break;
+                }                        
+            }              
+
+            //Match LATI/LONG in 'Next Generation of Genealogy Sitebuilding' files, 
+            //which do not use N,S,W,E in the coordinates 
+            if (preg_match('/\n2 LATI (-|)(\d{1,2})(,|.)(\d{1,7})/', $gedrec, $match))                    
+            {
+                //$match[1] = - or NULL; $match[2] = degree integer; $match[3] = decimal point/comma 
+                //$match[4] = numbers after decimal
+
+                $latitude = $match[1] . $match[2] . $match[3] . $match[4];
+            
+            }
+            
+            if (preg_match('/\n2 LONG (-|)(\d{1,3})(,|.)(\d{1,7})/', $gedrec, $match))                    
+            {
+                //$match[1] = - or NULL; $match[2] = degree integer; $match[3] = decimal point/comma 
+                //$match[4] = numbers after decimal
+
+                $longitude = $match[1] . $match[2] . $match[3] . $match[4];
+            }            
+        }
+            
+        elseif (preg_match('/0 _PLAC_DEFN/', $gedrec))
+        {
+            //'Legacy' GEDCOM exports program have separate place definitions 
+            //under the _PLAC_DEFN tag, which again may be linked via the place name, e.g. 
+            //
+            //0 @I3@ INDI
+            //1 DEAT
+            //2 DATE 14 Apr 1976
+            //2 PLAC Hasselt, Limburg, Belgium
+            //
+            //0 _PLAC_DEFN
+            //1 PLAC Hasselt, Limburg, Belgium
+            //2 ABBR Hasselt, Limburg, BEL
+            //2 MAP
+            //3 LATI N51.2
+            //3 LONG E5.41666666666667
+            
+            if (preg_match('/(?:1 PLAC) +(.+)/', $gedrec, $match))
+            {
+                $place = $match[1];
+            }            
+            
+            //Match LATI/LONG, which use N,S,W,E in the coordinates 
+            //and may exclude the decimal
+            if (preg_match('/\n3 LATI (N|S)(\d{1,2})(.\d{1,7}.*?)?/', $gedrec, $match))                    
+            {
+                //$match[1] = N or S; $match[2] = degree integer; 
+                //$match[3] = decimal point and numbers after
+              
+                //convert to numeric latitude - negative if southern hemisphere
+                switch ($match[1])
+                {
+                    case 'N':
+                        $latitude = $match[2] . $match[3];
+                        break;
+                    case 'S':
+                        $latitude = ($match[2]*-1) . $match[3];
+                        break;
+                    default:
+                        break;
+                }                        
+               
+            }                
+
+            if (preg_match('/\n3 LONG (W|E)(\d{1,3})(.\d{1,7}.*?)?/', $gedrec, $match))                    
+            {
+                //$match[1] = N or S; $match[2] = degree integer; 
+                //$match[3] = decimal point and numbers after
+
+                //convert to numeric latitude - negative if western hemisphere
+                switch ($match[1])
+                {
+                    case 'E':
+                        $longitude = $match[2] . $match[3];
+                        break;
+                    case 'W':
+                        $longitude = ($match[2]*-1) . $match[3];
+                        break;
+                    default:
+                        break;
+                }                        
+            }              
+        }        
+        else
+        {
+            $place = '';
+            $latitude = '';
+            $longitude = '';
+        }
+        
+        $geocode = new GedcomGeocode();
+        $geocode->gedcom_id = $gedcom_id;
+        $geocode->place = $place;
+        $geocode->lati = $latitude;
+        $geocode->long = $longitude;
+        $geocode->gedcom = $gedrec;
+        $geocode->save();
+    }
+    
+    
     /**
      * Creates the GedcomChildren for a GedcomFamily. 
      * @param string $record
@@ -312,9 +490,52 @@ class ParseController extends BaseController
             // Retrieve the date and place
             $date = $this->retrieveDate($fact);
             $place = $this->retrievePlace($fact);
+            $latitude = $this->retrieveLati($fact);
+            $longitude = $this->retrieveLong($fact);            
 
-            // Create the event (but not when it's CHAN or NEW, #14) 
-            if (!in_array($fact->getTag(), array('CHAN', 'NEW')))
+            //Match LATI/LONG, which use N,S,W,E in the coordinates 
+            //and may exclude the decimal
+            if (preg_match('/(N|S)(\d{1,2})(.\d{1,7}.*?)?/', $latitude, $match))                    
+            {
+                //$match[1] = N or S; $match[2] = degree integer; 
+                //$match[3] = decimal point and numbers after
+              
+                //convert to numeric latitude - negative if southern hemisphere
+                switch ($match[1])
+                {
+                    case 'N':
+                        $latitude = $match[2] . $match[3];
+                        break;
+                    case 'S':
+                        $latitude = ($match[2]*-1) . $match[3];
+                        break;
+                    default:
+                        break;
+                }                        
+               
+            }                
+            
+            if (preg_match('/(W|E)(\d{1,3})(.\d{1,7}.*?)?/', $longitude, $match))                    
+            {
+                //$match[1] = N or S; $match[2] = degree integer; 
+                //$match[3] = decimal point and numbers after
+
+                //convert to numeric latitude - negative if western hemisphere
+                switch ($match[1])
+                {
+                    case 'E':
+                        $longitude = $match[2] . $match[3];
+                        break;
+                    case 'W':
+                        $longitude = ($match[2]*-1) . $match[3];
+                        break;
+                    default:
+                        break;
+                }                        
+            }             
+
+            // Create the event (but not when it's CHAN, NEW or _UID) 
+            if (!in_array($fact->getTag(), array('CHAN', 'NEW', '_UID')))
             {
                 $time = new DateTime();
                 $events[] = array(
@@ -324,6 +545,8 @@ class ParseController extends BaseController
                     'date' => $date ? $date['date'] : NULL,
                     'datestring' => $date ? $date['string'] : NULL,
                     'place' => $place,
+                    'lati' => $latitude,
+                    'long' => $longitude,                    
                     'gedcom' => $fact->getGedcom(),
                     'created_at' => $time,
                     'updated_at' => $time,
@@ -369,6 +592,36 @@ class ParseController extends BaseController
         return $result;
     }
 
+    /**
+     * Retrieve the latitude from a fact
+     * @param WT_Lati $fact
+     * @return string
+     */
+    private function retrieveLati($fact)
+    {
+        $result = $fact->getLati()->getGedcomName();
+        if (empty($result))
+        {
+            $result = NULL;
+        }
+        return $result;
+    }
+    
+    /**
+     * Retrieve the longitude from a fact
+     * @param WT_Long $fact
+     * @return string
+     */
+    private function retrieveLong($fact)
+    {
+        $result = $fact->getLong()->getGedcomName();
+        if (empty($result))
+        {
+            $result = NULL;
+        }
+        return $result;
+    }
+        
     /**
      * Checks whether the given husband/wife is actually male/female. 
      * If not, a GedcomError will be created.

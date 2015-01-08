@@ -74,6 +74,14 @@ public function errors()
 return $this->hasMany('GedcomError', 'gedcom_id');
 }
 /**
+* Returns the GedcomGeocodes belonging to this Gedcom.
+* @return Illuminate\Database\Eloquent\Collection
+*/
+public function geocodes()
+{
+return $this->hasMany('GedcomGeocode', 'gedcom_id');
+}
+/**
 * Returns the GedcomChildren belonging to this Gedcom through the GedcomFamilies.
 * @return Illuminate\Database\Eloquent\Collection
 */
