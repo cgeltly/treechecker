@@ -25,8 +25,7 @@ class CreateFamiliesTable extends Migration
             $table->text('gedcom');
             $table->timestamps();
             
-            $table->foreign('indi_id_husb')->references('id')->on('individuals')->onDelete('cascade');
-            $table->foreign('indi_id_wife')->references('id')->on('individuals')->onDelete('cascade');
+            $table->foreign('gedcom_id')->references('id')->on('gedcoms')->onDelete('cascade');
             $table->index('gedcom_id');            
         });
     }

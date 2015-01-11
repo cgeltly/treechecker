@@ -147,9 +147,8 @@ class ParseController extends BaseController
         // Standardise gedcom format
         $gedrec = \Webtrees\Import::reformat_record_import($gedcom);
         // import different types of records
-
         
-        if (preg_match('/^0 @(' . WT_REGEX_XREF . ')@? (' . WT_REGEX_TAG . ')/', $gedrec, $match))
+        if (preg_match('/^0 @(' . WT_REGEX_XREF . ')@ (' . WT_REGEX_TAG . ')/', $gedrec, $match))
         {
             list(, $xref, $type) = $match;
             // check for a _UID, if the record doesn't have one, add one
@@ -283,6 +282,11 @@ class ParseController extends BaseController
     private function processGeocode($gedrec, $gedcom_id)
     {
 
+        //deafult null values for attributes
+        $place = null;
+        $latitude = 99.9999999;
+        $longitude = 999.9999999;    
+        
         if (preg_match('/(?:0 _PLAC) +(.+)/', $gedrec, $match))   
         {        
 
@@ -300,8 +304,11 @@ class ParseController extends BaseController
             //2 LATI N52,5666667
             //2 LONG E7,3666667
 
-            $place = $match[1];
-
+            if ($match[1])
+            {
+                $place = $match[1];
+            }
+            
             //Match LATI/LONG in RootsMagic files, which use N,S,W,E in the coordinates 
             if (preg_match('/\n2 LATI (N|S)(\d{1,2})(,|.)(\d{1,7})/', $gedrec, $match))                    
             {
@@ -384,7 +391,7 @@ class ParseController extends BaseController
             }            
             
             //Match LATI/LONG, which use N,S,W,E in the coordinates 
-            //and may exclude the decimal
+            //and may exclude any decimals
             if (preg_match('/\n3 LATI (N|S)(\d{1,2})(.\d{1,7}.*?)?/', $gedrec, $match))                    
             {
                 //$match[1] = N or S; $match[2] = degree integer; 
@@ -394,10 +401,10 @@ class ParseController extends BaseController
                 switch ($match[1])
                 {
                     case 'N':
-                        $latitude = $match[2] . $match[3];
+                        $latitude = $match[2] . $this->decimalsExist($match);
                         break;
                     case 'S':
-                        $latitude = ($match[2]*-1) . $match[3];
+                        $latitude = ($match[2]*-1) . $this->decimalsExist($match);
                         break;
                     default:
                         break;
@@ -410,26 +417,21 @@ class ParseController extends BaseController
                 //$match[1] = N or S; $match[2] = degree integer; 
                 //$match[3] = decimal point and numbers after
 
+                //$numbers = $match[3];
                 //convert to numeric latitude - negative if western hemisphere
                 switch ($match[1])
                 {
                     case 'E':
-                        $longitude = $match[2] . $match[3];
+                        $longitude = $match[2] . $this->decimalsExist($match);
                         break;
                     case 'W':
-                        $longitude = ($match[2]*-1) . $match[3];
+                        $longitude = ($match[2]*-1) . $this->decimalsExist($match);
                         break;
                     default:
                         break;
                 }                        
             }              
         }        
-        else
-        {
-            $place = '';
-            $latitude = '';
-            $longitude = '';
-        }
         
         $geocode = new GedcomGeocode();
         $geocode->gedcom_id = $gedcom_id;
@@ -440,6 +442,21 @@ class ParseController extends BaseController
         $geocode->save();
     }
     
+    /*
+     * Checks for missing decimal numbers and returns blank string if so.
+     * @param array $match
+     */
+    private function decimalsExist($match) 
+    {
+        if (!array_key_exists(3, $match)) 
+        {
+            return '';
+        }
+        else
+        {
+            return $match[3];
+        }    
+    }
     
     /**
      * Creates the GedcomChildren for a GedcomFamily. 
@@ -534,8 +551,21 @@ class ParseController extends BaseController
                 }                        
             }             
 
-            // Create the event (but not when it's CHAN, NEW or _UID) 
-            if (!in_array($fact->getTag(), array('CHAN', 'NEW', '_UID')))
+            // Create the event, except with the following tags:
+            // CHAN 
+            // NEW 
+            // _UID 
+            // FAMS 
+            // FAMC
+            // CHIL 
+            // NAME
+            // CREA
+            // _FID
+            // OBJE
+            // HUSB
+            // WIFE
+            if (!in_array($fact->getTag(), array('CHAN', 'NEW', '_UID', 'FAMS', 'FAMC', 'CHIL', 
+                'NAME', 'CREA', '_FID', 'OBJE', 'HUSB', 'WIFE', )))
             {
                 $time = new DateTime();
                 $events[] = array(
