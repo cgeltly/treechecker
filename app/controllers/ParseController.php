@@ -220,7 +220,7 @@ class ParseController extends BaseController
         $individual->gedcom = $gedrec;
         $individual->save();
 
-        $this->processEvents($record, $individual->id);        
+        $this->processEvents($record, $gedcom_id, $individual->id);        
     }
 
     /**
@@ -270,7 +270,7 @@ class ParseController extends BaseController
 
         // Process the GedcomChildren and GedcomEvents
         $this->processChildren($record, $gedcom_id, $family);
-        $this->processEvents($record, NULL, $family->id);
+        $this->processEvents($record, $gedcom_id, NULL, $family->id);
     }
 
     
@@ -474,6 +474,7 @@ class ParseController extends BaseController
             {
                 // If found, create a GedcomChild
                 $child = new GedcomChild();
+                $child->gedcom_id = $gedcom_id;
                 $child->fami_id = $family->id;
                 $child->indi_id = $ind->id;
                 $child->save();
@@ -499,13 +500,13 @@ class ParseController extends BaseController
      * @param int $indi_id
      * @param int $fami_id
      */
-    private function processEvents($record, $indi_id = NULL, $fami_id = NULL)
+    private function processEvents($record, $gedcom_id, $indi_id = NULL, $fami_id = NULL)
     {
         $events = array();
         foreach ($record->getFacts() as $fact)
         {
             // Retrieve the date and place
-            $date = $this->retrieveDate($fact);
+            $date = $this->retrieveDate($fact, $gedcom_id);
             $place = $this->retrievePlace($fact);
             $latitude = $this->retrieveLati($fact);
             $longitude = $this->retrieveLong($fact);            
@@ -521,10 +522,10 @@ class ParseController extends BaseController
                 switch ($match[1])
                 {
                     case 'N':
-                        $latitude = $match[2] . $match[3];
+                        $latitude = $match[2] . $this->decimalsExist($match);
                         break;
                     case 'S':
-                        $latitude = ($match[2]*-1) . $match[3];
+                        $latitude = ($match[2]*-1) . $this->decimalsExist($match);
                         break;
                     default:
                         break;
@@ -541,10 +542,10 @@ class ParseController extends BaseController
                 switch ($match[1])
                 {
                     case 'E':
-                        $longitude = $match[2] . $match[3];
+                        $longitude = $match[2] . $this->decimalsExist($match);
                         break;
                     case 'W':
-                        $longitude = ($match[2]*-1) . $match[3];
+                        $longitude = ($match[2]*-1) . $this->decimalsExist($match);
                         break;
                     default:
                         break;
@@ -564,15 +565,18 @@ class ParseController extends BaseController
             // OBJE
             // HUSB
             // WIFE
+            // SEX
             if (!in_array($fact->getTag(), array('CHAN', 'NEW', '_UID', 'FAMS', 'FAMC', 'CHIL', 
-                'NAME', 'CREA', '_FID', 'OBJE', 'HUSB', 'WIFE', )))
+                'NAME', 'CREA', '_FID', 'OBJE', 'HUSB', 'WIFE', 'SEX', )))
             {
                 $time = new DateTime();
                 $events[] = array(
+                    'gedcom_id' => $gedcom_id,
                     'indi_id' => $indi_id,
                     'fami_id' => $fami_id,
                     'event' => $fact->getTag(),
                     'date' => $date ? $date['date'] : NULL,
+                    'estimate' => $date ? $date['estimate'] : NULL,
                     'datestring' => $date ? $date['string'] : NULL,
                     'place' => $place,
                     'lati' => $latitude,
@@ -595,18 +599,47 @@ class ParseController extends BaseController
      * @param WT_Fact $fact
      * @return array
      */
-    private function retrieveDate($fact)
+    private function retrieveDate($fact, $gedcom_id)
     {
         $result = array();
         $date = $fact->getDate();
-        if ($date->isOk())
+
+        //webtrees date processing 
+        if (get_class($date->date1) != 'NumericGregorian')
         {
+            if($date->isOk())
+            {    
             $result['date'] = implode('-', array($date->date1->y, $date->date1->m, $date->date1->d));
             $result['string'] = $fact->getAttribute('DATE');
+            $result['estimate'] = $date->estimate;
+            return $result;
+            }
         }
-        return $result;
-    }
-
+        //additional date processing to deal with purely numeric dates, e.g. 12-03-1786
+        if (get_class($date->date1) == 'NumericGregorian')
+            {
+                if(checkdate($date->date1->m, $date->date1->d, $date->date1->y))
+                {
+                $result['date'] = implode('-', array($date->date1->y, $date->date1->m, $date->date1->d));
+                $result['string'] = $fact->getAttribute('DATE');
+                $result['estimate'] = $date->estimate;
+                return $result;
+                }
+                else
+                {
+                    $error = new GedcomError();
+                    $error->gedcom_id = $gedcom_id;
+//                    $error->indi_id = $ind->id;
+//                    $error->fami_id = $family_id;
+                    $error->stage = 'parsing';
+                    $error->classification = 'incorrect';
+                    $error->severity = 'error';
+                    $error->message = sprintf('Impossible or US formatted date ' . implode('-', array($date->date1->y, $date->date1->m, $date->date1->d)) .'');
+                    $error->save();  
+                }
+            }
+    }       
+        
     /**
      * Retrieve the place from a fact
      * @param WT_Fact $fact

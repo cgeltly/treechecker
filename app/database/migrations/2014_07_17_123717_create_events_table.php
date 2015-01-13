@@ -18,10 +18,12 @@ class CreateEventsTable extends Migration
             $table->engine = 'InnoDB';
             
             $table->increments('id');
+            $table->unsignedInteger('gedcom_id');            
             $table->unsignedInteger('indi_id')->nullable();
             $table->unsignedInteger('fami_id')->nullable();
             $table->string('event');
             $table->date('date')->nullable();
+            $table->boolean('estimate')->nullable();
             $table->string('datestring')->nullable();
             $table->string('place')->nullable();
             $table->double('lati')->nullable();            

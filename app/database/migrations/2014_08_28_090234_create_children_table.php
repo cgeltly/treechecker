@@ -18,6 +18,7 @@ class CreateChildrenTable extends Migration
             $table->engine = 'InnoDB';
             
             $table->increments('id');
+            $table->unsignedInteger('gedcom_id');
             $table->unsignedInteger('fami_id');
             $table->unsignedInteger('indi_id');
             

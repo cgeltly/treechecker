@@ -37,11 +37,12 @@ if (!defined('WT_WEBTREES')) {
 }
 
 class WT_Date {
-	var $qual1=null; // Optional qualifier, such as BEF, FROM, ABT
+        var $qual1=null; // Optional qualifier, such as BEF, FROM, ABT
 	var $date1=null; // The first (or only) date
 	var $qual2=null; // Optional qualifier, such as TO, AND
 	var $date2=null; // Optional second date
 	var $text =null; // Optional text, as included with an INTerpreted date
+        var $estimate =null; //Binary indicator whether date is estimated, e.g. 'ABT 1810'
 
 	function __construct($date) {
 		// Extract any explanatory text
@@ -54,11 +55,15 @@ class WT_Date {
 			$this->date1=$this->ParseDate($match[2]);
 			$this->qual2=$match[3];
 			$this->date2=$this->ParseDate($match[4]);
+                        $this->estimate=1;
 		} elseif (preg_match('/^(FROM|BET|TO|AND|BEF|AFT|CAL|EST|INT|ABT) (.+)/', $date, $match)) {
 			$this->qual1=$match[1];
 			$this->date1=$this->ParseDate($match[2]);
+                        $this->estimate=1;
 		} else {
-			$this->date1=$this->ParseDate($date);
+
+			$this->date1=$this->ParseDate($date, 0);
+                        $this->estimate=0;
 		}
 	}
 
@@ -73,20 +78,35 @@ class WT_Date {
 	// Convert an individual gedcom date string into a WT_Date_Calendar object
 	static function ParseDate($date) {
 		// Valid calendar escape specified? - use it
-		if (preg_match('/^(@#D(?:GREGORIAN|JULIAN|HEBREW|HIJRI|JALALI|FRENCH R|ROMAN|JALALI)+@) ?(.*)/', $date, $match)) {
+		if (preg_match('/^(@#D(?:GREGORIAN|JULIAN|HEBREW|HIJRI|JALALI|FRENCH R|ROMAN|JALALI)+@) ?(.*)/', $date, $match)) 
+                {
 			$cal=$match[1];
 			$date=$match[2];
-		} else {
+		} 
+                else 
+                {
 			$cal='';
 		}
 		// A date with a month: DM, M, MY or DMY
-		if (preg_match('/^(\d?\d?) ?(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC|TSH|CSH|KSL|TVT|SHV|ADR|ADS|NSN|IYR|SVN|TMZ|AAV|ELL|VEND|BRUM|FRIM|NIVO|PLUV|VENT|GERM|FLOR|PRAI|MESS|THER|FRUC|COMP|MUHAR|SAFAR|RABI[AT]|JUMA[AT]|RAJAB|SHAAB|RAMAD|SHAWW|DHUAQ|DHUAH|FARVA|ORDIB|KHORD|TIR|MORDA|SHAHR|MEHR|ABAN|AZAR|DEY|BAHMA|ESFAN) ?((?:\d{1,4}(?: B\.C\.)?|\d\d\d\d\/\d\d)?)$/', $date, $match)) {
-			$d=$match[1];
+		if (preg_match('/^(\d?\d?) ?(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC|TSH|CSH|KSL|TVT|SHV|ADR|ADS|NSN|IYR|SVN|TMZ|AAV|ELL|VEND|BRUM|FRIM|NIVO|PLUV|VENT|GERM|FLOR|PRAI|MESS|THER|FRUC|COMP|MUHAR|SAFAR|RABI[AT]|JUMA[AT]|RAJAB|SHAAB|RAMAD|SHAWW|DHUAQ|DHUAH|FARVA|ORDIB|KHORD|TIR|MORDA|SHAHR|MEHR|ABAN|AZAR|DEY|BAHMA|ESFAN) ?((?:\d{1,4}(?: B\.C\.)?|\d\d\d\d\/\d\d)?)$/', $date, $match)) 
+                {
+                        $d=$match[1];
 			$m=$match[2];
 			$y=$match[3];
-		} else
+		} 
+                //A date in d(d)?m(m)?(yyyy) or m(m)?d(d)?y(yyy) format
+                //if dates are in latter (US) format, these will mostly generate parse errors
+                elseif (preg_match('/^([0-9]{1,2})([^0-9a-zA-Z])([0-9]{1,2})([^0-9a-zA-Z])([0-9]{0,4}$)/', $date, $match))
+                {
+                        $d=$match[1];
+                        $m=$match[3];
+                        $y=$match[5]; 
+                        $cal='@#NUMERICGREGORIAN@';
+            
+                }
+
 			// A date with just a year
-			if (preg_match('/^(\d{1,4}(?: B\.C\.)?|\d\d\d\d\/\d\d)$/', $date, $match)) {
+			elseif (preg_match('/^(\d{1,4}(?: B\.C\.)?|\d\d\d\d\/\d\d)$/', $date, $match)) {
 				$d='';
 				$m='';
 				$y=$match[1];
@@ -107,6 +127,7 @@ class WT_Date {
 						$d=$match[1];
 				}
 			}
+                
 		// Unambiguous dates - override calendar escape
 		if (preg_match('/^(TSH|CSH|KSL|TVT|SHV|ADR|ADS|NSN|IYR|SVN|TMZ|AAV|ELL)$/', $m)) {
 			$cal='@#DHEBREW@';
@@ -140,8 +161,10 @@ class WT_Date {
 		}
 		// Now construct an object of the correct type
 		switch ($cal) {
+                case '@#NUMERICGREGORIAN@':
+                        return new NumericGregorian(array($y, $m, $d));
 		case '@#DGREGORIAN@':
-			return new WT_Date_Gregorian(array($y, $m, $d));
+			return new WT_Date_Gregorian(array($y, $m, $d));                    
 		case '@#DJULIAN@':
 			return new WT_Date_Julian(array($y, $m, $d));
 		case '@#DHEBREW@':
