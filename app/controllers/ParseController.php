@@ -147,7 +147,7 @@ class ParseController extends BaseController
         // Standardise gedcom format
         $gedrec = \Webtrees\Import::reformat_record_import($gedcom);
         // import different types of records
-        
+    
         if (preg_match('/^0 @(' . WT_REGEX_XREF . ')@ (' . WT_REGEX_TAG . ')/', $gedrec, $match))
         {
             list(, $xref, $type) = $match;
@@ -499,6 +499,7 @@ class ParseController extends BaseController
      * @param WT_GedcomRecord $record
      * @param int $indi_id
      * @param int $fami_id
+     * @return array
      */
     private function processEvents($record, $gedcom_id, $indi_id = NULL, $fami_id = NULL)
     {
@@ -506,7 +507,7 @@ class ParseController extends BaseController
         foreach ($record->getFacts() as $fact)
         {
             // Retrieve the date and place
-            $date = $this->retrieveDate($fact, $gedcom_id);
+            $date = $this->retrieveDate($fact, $gedcom_id, $indi_id, $fami_id);
             $place = $this->retrievePlace($fact);
             $latitude = $this->retrieveLati($fact);
             $longitude = $this->retrieveLong($fact);            
@@ -597,15 +598,18 @@ class ParseController extends BaseController
     /**
      * Retrieve the date from a fact. 
      * @param WT_Fact $fact
+     * @param $gedcom_id
+     * @param $indi_id
+     * @param $fami_id
      * @return array
      */
-    private function retrieveDate($fact, $gedcom_id)
+    private function retrieveDate($fact, $gedcom_id, $indi_id, $fami_id)
     {
         $result = array();
         $date = $fact->getDate();
 
         //webtrees date processing 
-        if (get_class($date->date1) != 'NumericGregorian')
+        if (get_class($date->date1) != 'NumericGregorianDate') 
         {
             if($date->isOk())
             {    
@@ -616,7 +620,7 @@ class ParseController extends BaseController
             }
         }
         //additional date processing to deal with purely numeric dates, e.g. 12-03-1786
-        if (get_class($date->date1) == 'NumericGregorian')
+        if (get_class($date->date1) == 'NumericGregorianDate')
             {
                 if(checkdate($date->date1->m, $date->date1->d, $date->date1->y))
                 {
@@ -629,8 +633,8 @@ class ParseController extends BaseController
                 {
                     $error = new GedcomError();
                     $error->gedcom_id = $gedcom_id;
-//                    $error->indi_id = $ind->id;
-//                    $error->fami_id = $family_id;
+                    $error->indi_id = $indi_id;
+                    $error->fami_id = $fami_id;
                     $error->stage = 'parsing';
                     $error->classification = 'incorrect';
                     $error->severity = 'error';

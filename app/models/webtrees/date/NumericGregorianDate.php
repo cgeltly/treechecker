@@ -27,7 +27,7 @@
  * MacFamilyTree software. This is an additional date class to deal with this issue.
  */
 
-class NumericGregorian
+class NumericGregorianDate
 {
  
 public function __construct($date) {
@@ -38,6 +38,9 @@ public function __construct($date) {
 			$this->m = (int)$date[1];
 			$this->y = (int)$date[0];
 
+                        
+        		$this->minJD=$date=WT_Date_Calendar::YMDtoJD($this->y, $this->m, $this->d);
+			$this->maxJD=$date=WT_Date_Calendar::YMDtoJD($this->y, $this->m, $this->d);
 		}                
 }
 }

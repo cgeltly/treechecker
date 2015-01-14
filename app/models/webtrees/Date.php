@@ -101,7 +101,7 @@ class WT_Date {
                         $d=$match[1];
                         $m=$match[3];
                         $y=$match[5]; 
-                        $cal='@#NUMERICGREGORIAN@';
+                        $cal='@#NUMERICGREGORIANDATE@';
             
                 }
 
@@ -161,8 +161,8 @@ class WT_Date {
 		}
 		// Now construct an object of the correct type
 		switch ($cal) {
-                case '@#NUMERICGREGORIAN@':
-                        return new NumericGregorian(array($y, $m, $d));
+                case '@#NUMERICGREGORIANDATE@':
+                        return new NumericGregorianDate(array($y, $m, $d));
 		case '@#DGREGORIAN@':
 			return new WT_Date_Gregorian(array($y, $m, $d));                    
 		case '@#DJULIAN@':
