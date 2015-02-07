@@ -21,11 +21,13 @@ class CreateChildrenTable extends Migration
             $table->unsignedInteger('gedcom_id');
             $table->unsignedInteger('fami_id');
             $table->unsignedInteger('indi_id');
+            $table->timestamps();
             
             $table->foreign('fami_id')->references('id')->on('families')->onDelete('cascade');
             $table->foreign('indi_id')->references('id')->on('individuals')->onDelete('cascade');
+            $table->index('gedcom_id');            
 
-            $table->timestamps();
+
         });
     }
 

@@ -30,6 +30,7 @@ class CreateGedcomsTable extends Migration
             
             //delete user's gedcom files when user is deleted
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->index('parsed');
         });
     }
 

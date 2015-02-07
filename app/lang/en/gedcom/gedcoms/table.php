@@ -9,5 +9,6 @@ return array(
 	'key'                   => 'GEDCOM key',
 	'gedcom'                => 'GEDCOM',
 	'gedcoms'               => 'GEDCOMs',
+    	'upload'                => 'Upload',
 
 );

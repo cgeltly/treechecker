@@ -36,6 +36,15 @@ class GedcomsController extends BaseController
     }
 
     /**
+     * Show a list of all the unparsed gedcoms.
+     */
+    public function getUnparsed()
+    {
+        Session::forget('progress');
+        $this->layout->content = View::make('gedcom/gedcoms/unparsed');
+    }    
+    
+    /**
      * Shows a single GEDCOM file, with some statistics. 
      * @param int $id the Gedcom ID
      */
@@ -255,6 +264,29 @@ from (select count(children.id) as ucount
                         ->make();
     }
 
+    /**
+     * Show a list of all the unparsed gedcoms formatted for Datatables.
+     * @return Datatables JSON
+     */
+    public function getUnparseddata()
+    {
+        $user = Auth::user();
+        $gedcoms = Gedcom::select(array('file_name', 'tree_name', 'source', 'notes', 'parsed', 'id'));
+        $gedcoms->where('parsed', 0);
+        if ($user->role != 'admin')
+        {
+            $gedcoms->where('user_id', $user->id);
+        }
+
+        return Datatables::of($gedcoms)
+                        ->edit_column('file_name', '{{ HTML::link("gedcoms/show/" . $id, $file_name) }}')
+                        ->edit_column('notes', '{{{ Str::words($notes, 10) }}}')
+                        ->add_column('parse_url', '{{ HTML::link("parse/parse/" . $id, "Parse") }}')
+                        ->remove_column('parsed')
+                        ->remove_column('id')
+                        ->make();
+    }    
+    
     /**
      * Show a list of all the GedcomIndividuals formatted for Datatables.
      * @return Datatables JSON

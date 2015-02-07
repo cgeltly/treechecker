@@ -12,7 +12,8 @@ $('.progress-bar').html(value + '%');
 if (value === 100)
 {
 // Parsing completed
-$('.parse-message').html("{{ Lang::get('gedcom/gedcoms/actions.parsing_completed') }}");
+//$('.parse-message').html("{{ Lang::get('gedcom/gedcoms/actions.parsing_completed') }}");
+window.location="{{URL::to('users/dashboard')}}"; 
 setTimeout(function () {
 location.reload();
 }, 2000);
@@ -46,7 +47,7 @@ doPoll();
 <th>@lang('gedcom/gedcoms/table.tree_name')</th>
 <th>@lang('gedcom/gedcoms/table.source')</th>
 <th>@lang('gedcom/gedcoms/table.notes')</th>
-<th>@lang('common/common.actions')</th>
+<th>@lang('gedcom/gedcoms/table.notes')</th>
 </tr>
 </thead>
 </table>
@@ -57,4 +58,4 @@ doPoll();
 </div>
 </div>
 </div>
-@include('layouts.table', array('ajax_source' => 'gedcoms/data', 'id' => 'gedcoms'))
+@include('layouts.table', array('ajax_source' => 'gedcoms/unparseddata', 'id' => 'gedcoms'))

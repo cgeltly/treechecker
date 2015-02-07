@@ -14,6 +14,7 @@ Route::controller('events', 'EventsController');
 Route::controller('families', 'FamiliesController');
 Route::controller('gedcoms', 'GedcomsController');
 Route::controller('home', 'HomeController');
+Route::controller('about', 'AboutController');
 Route::controller('individuals', 'IndividualsController');
 Route::controller('users', 'UsersController');
 Route::controller('fileuploads', 'FileUploadsController');

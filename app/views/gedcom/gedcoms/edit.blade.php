@@ -16,7 +16,7 @@
 </div>
 <div class="form-group">
     {{ Form::label('notes', Lang::get('gedcom/gedcoms/table.notes'), array('class' => 'control_label')) }}
-    {{ Form::textarea('notes', Input::old('notes'), array('class' => 'form-control')) }}
+    {{ Form::textarea('notes', Input::old('notes'), array('style' => 'height: 90px', 'class' => 'form-control')) }}
 </div>
 
 {{ Form::submit(Lang::get('common/form.save'), array('class' => 'btn btn-primary')) }}

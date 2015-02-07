@@ -17,4 +17,5 @@ return array(
     'nomen_nescio'  => 'N.N.',
     'file'          => 'File',
     'home'          => 'Home',
+    'about'         => 'About',
 );

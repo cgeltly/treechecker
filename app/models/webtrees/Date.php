@@ -56,7 +56,7 @@ class WT_Date {
 			$this->qual2=$match[3];
 			$this->date2=$this->ParseDate($match[4]);
                         $this->estimate=1;
-		} elseif (preg_match('/^(FROM|BET|TO|AND|BEF|AFT|CAL|EST|INT|ABT) (.+)/', $date, $match)) {
+		} elseif (preg_match('/^(\~ |\~|FROM |BET |TO |AND |BEF |AFT |CAL |EST |INT |ABT )(.+)/', $date, $match)) {
 			$this->qual1=$match[1];
 			$this->date1=$this->ParseDate($match[2]);
                         $this->estimate=1;

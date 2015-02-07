@@ -11,6 +11,8 @@
         {{ HTML::style('bootstrap/css/bootstrap.min.css') }}
         {{ HTML::style('bootstrap/css/bootstrap-theme.min.css') }}
         {{ HTML::style('//cdn.datatables.net/plug-ins/725b2a2115b/integration/bootstrap/3/dataTables.bootstrap.css') }}
+        {{ HTML::style('http://fonts.googleapis.com/css?family=Roboto+Condensed') }}       
+        
     </head>
 
     <body role="document" style="padding-top: 70px;">

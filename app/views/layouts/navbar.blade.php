@@ -15,9 +15,11 @@
 @if(!Auth::check())
 <li>{{ HTML::link('users/register', Lang::get('users/title.register')) }}</li>
 <li>{{ HTML::link('users/login', Lang::get('users/title.login')) }}</li>
+<li>{{ HTML::link('about', Lang::get('common/common.about')) }}</li>
 @else
 <li>{{ HTML::link('users/dashboard', 'Dashboard') }}</li>
 <li>{{ HTML::link('gedcoms', Lang::get('gedcom/gedcoms/table.gedcoms')) }}</li>
+<li>{{ HTML::link('gedcoms/upload', Lang::get('gedcom/gedcoms/table.upload')) }}</li>
 <li>{{ HTML::link('individuals', Lang::get('gedcom/individuals/table.individuals')) }}</li>
 <li>{{ HTML::link('families', Lang::get('gedcom/families/table.families')) }}</li>
 <li>{{ HTML::link('events', Lang::get('gedcom/events/table.events')) }}</li>

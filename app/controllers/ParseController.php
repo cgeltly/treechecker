@@ -125,12 +125,12 @@ class ParseController extends BaseController
         DB::connection()->disableQueryLog();
         DB::beginTransaction();
 
-        // Split records per 0 line and import
-        foreach (preg_split('/\n+(?=0)/', $gedcom) as $record)
-        {
-            $this->importRecord($record, $gedcom_id);
-        }
-
+            // Split records per 0 line and import
+            foreach (preg_split('/\n+(?=0)/', $gedcom) as $record)
+            {
+                $this->importRecord($record, $gedcom_id);
+            }
+     
         // End the transaction
         DB::commit();
     }
@@ -567,8 +567,10 @@ class ParseController extends BaseController
             // HUSB
             // WIFE
             // SEX
+            //NOTE
+            //SOUR
             if (!in_array($fact->getTag(), array('CHAN', 'NEW', '_UID', 'FAMS', 'FAMC', 'CHIL', 
-                'NAME', 'CREA', '_FID', 'OBJE', 'HUSB', 'WIFE', 'SEX', )))
+                'NAME', 'CREA', '_FID', 'OBJE', 'HUSB', 'WIFE', 'SEX', 'NOTE', 'SOUR', )))
             {
                 $time = new DateTime();
                 $events[] = array(

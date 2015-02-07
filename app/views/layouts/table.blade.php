@@ -3,7 +3,9 @@
         $('#{{$id}}').dataTable({
             "bProcessing": true,
             "bServerSide": true,
-            "sAjaxSource": "{{ URL::to($ajax_source) }}"
+            "sAjaxSource": "{{ URL::to($ajax_source) }}",
+            "iDisplayLength": 100,
+            "aaSorting": [[ 4, 'asc' ]]
         });
     });
 </script>
