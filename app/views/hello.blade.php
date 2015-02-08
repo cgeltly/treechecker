@@ -10,12 +10,16 @@
 </p>        
 <br>
 <p>
-    This application is being developed to improve the quality of genealogical data
-worldwide. It allows you to upload your GEDCOM family tree file and to check for 
-irregularities in the dates, events, relationships and coding of the file.
-The aim is to enable people to correct errors in their files and bring family tree
-research up to a higher standard.
+    
+Upload a GEDCOM family tree file and check for 
+errors in the dates, events, relationships and file coding.
 </p> 
+<p>
+TreeChecker exists to raise the quality of family tree
+research, and to advance standards of genealogical data exchange. 
+</p>
+
+
 <br>
 <p>
 {{HTML::link('users/dashboard', 'Register »', array('class' => 'btn btn-primary btn-lg', 'role' => 'button')) }}

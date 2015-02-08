@@ -56,8 +56,8 @@ Input::file('file')->move($abs_storage_dir, $new_file_name);
 // Place in storage location numbered consecutively
 chdir($abs_storage_dir);
 // Either use awk or the chunkFile method below
-exec("awk 'BEGIN{out=1} NR>1 && ++i>10000 && /^0 / {++out; i=0} {print > out}' $new_file_name");
-//$this->chunkFile($new_file_name);
+//exec("awk 'BEGIN{out=1} NR>1 && ++i>10000 && /^0 / {++out; i=0} {print > out}' $new_file_name");
+$this->chunkFile($new_file_name);
 // Save to database
 $gedcom = new Gedcom();
 $gedcom->user_id = Auth::user()->id;

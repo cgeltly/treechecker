@@ -9,26 +9,23 @@
 <h2>Error recognition for genealogical trees</h2>
 </p>        
 <br>
+
 <p>
-    TreeChecker is currently in the beta testing phase. It is being developed
+TreeChecker is currently in the beta testing phase. It is being developed
 by researchers at Utrecht University, who are using genealogical data to address historical, 
 demographic and biological research questions.
 </p>
 <p>
 
-Further information at the wiki: {{ HTML::link('http://www.treechecker.net/wiki/') }}
+Further information: {{ HTML::link('http://www.treechecker.net/wiki/', 'Wiki') }}
 <br>
-Source code: {{ HTML::link('https://github.com/cgeltly/treechecker') }}
+Source code: {{ HTML::link('https://github.com/cgeltly/treechecker', 'GitHub') }}
 <br>
-Contact: {{ HTML::mailto('corry.gellatly@gmail.com', 'email') }}
+Contact: {{ HTML::mailto('corry.gellatly@gmail.com', 'Email') }}
 <br>
-Links:
-<br>
-{{ HTML::link('http://www.uu.nl', 'Utrecht University') }}
-<br>
-{{ HTML::link('http://www.collective-action.info', 'Institutions for Collective Action') }}
-<br>
-{{ HTML::link('http://http://digitalhumanities.wp.hum.uu.nl/', 'Digital Humanities Lab') }}
+Links: {{ HTML::link('http://www.uu.nl', 'Utrecht University') }},&nbsp; 
+{{ HTML::link('http://www.collective-action.info', 'Institutions for Collective Action') }},&nbsp; 
+{{ HTML::link('http://digitalhumanities.wp.hum.uu.nl/', 'Digital Humanities Lab') }}
 </p>
 
 

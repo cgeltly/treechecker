@@ -1110,7 +1110,7 @@ body{
 	font-size:14px;
 	line-height:1.42857143;
 	color:#333;
-	background-color:rgba(224, 241, 248, 1);
+	background-color:whitesmoke;
 }
 
 input,button,select,textarea{
@@ -1120,7 +1120,7 @@ input,button,select,textarea{
 }
 
 a{
-	color:#604976;
+	color:rgba(10, 185, 222, 1);
 	text-decoration:none
 }
 
@@ -4560,7 +4560,7 @@ textarea.input-group-sm>.form-control,textarea.input-group-sm>.input-group-addon
 }
 
 .navbar-inverse .navbar-brand{
-	color:rgba(219, 182, 126, 1)
+	color:#708d2a
 }
 
 .navbar-inverse .navbar-brand:hover,.navbar-inverse .navbar-brand:focus{
@@ -4573,7 +4573,7 @@ textarea.input-group-sm>.form-control,textarea.input-group-sm>.input-group-addon
 }
 
 .navbar-inverse .navbar-nav>li>a{
-	color:rgba(209, 215, 206, 1)
+	color:#708d2a
 }
 
 .navbar-inverse .navbar-nav>li>a:hover,.navbar-inverse .navbar-nav>li>a:focus{
@@ -4930,7 +4930,7 @@ a.list-group-item.active>.badge,.nav-pills>.active>a>.badge{
 .jumbotron{
 	padding:30px;
 	margin-bottom:30px;
-	color:inherit;
+	color:#fff;
 	background-color:#177e8b
 }
 
