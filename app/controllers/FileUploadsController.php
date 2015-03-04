@@ -21,6 +21,15 @@
 */
 class FileUploadsController extends BaseController
 {
+    
+    public function __construct()
+    {
+        parent::__construct();
+        
+        //prevent access to controller methods without login
+        $this->beforeFilter('auth');
+    }
+    
     /**
     * Uploads the Gedcom to the file server, splits it in chunks for faster processing.
     * @return Response the index page if validation passes, else the upload page.

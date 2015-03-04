@@ -25,6 +25,14 @@ class ErrorsController extends BaseController
 {
 
     protected $layout = "layouts.main";
+    
+    public function __construct()
+    {
+        parent::__construct();
+        
+        //prevent access to controller methods without login
+        $this->beforeFilter('auth');
+    }
 
     /**
      * Show a list of all the GedcomErrors.

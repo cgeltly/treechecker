@@ -23,6 +23,14 @@
 
 class ParseController extends BaseController
 {
+    
+    public function __construct()
+    {
+        parent::__construct();
+        
+        //prevent access to controller methods without login
+        $this->beforeFilter('auth');
+    }    
 
     /**
      * Parses a Gedcom and creates parse errors when necessary.
