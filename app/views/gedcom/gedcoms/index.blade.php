@@ -39,6 +39,13 @@ doPoll();
 @lang('gedcom/gedcoms/title.gedcom_management')
 </h3>
 </div>
+<div class="parse-progress" style="display: none;">
+<h4 class="parse-message">@lang('gedcom/gedcoms/actions.parsing_started')</h4>
+<div class="progress">
+<div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+</div>
+</div>
+</div>
 <table id="gedcoms" class="table table-striped table-hover">
 <thead>
 <tr>
@@ -50,11 +57,4 @@ doPoll();
 </tr>
 </thead>
 </table>
-<div class="parse-progress" style="display: none;">
-<h4 class="parse-message">@lang('gedcom/gedcoms/actions.parsing_started')</h4>
-<div class="progress">
-<div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100">
-</div>
-</div>
-</div>
 @include('layouts.table', array('ajax_source' => 'gedcoms/data', 'id' => 'gedcoms'))

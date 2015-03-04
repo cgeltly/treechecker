@@ -7,8 +7,7 @@
 @include('layouts.errors')
 
 <div class="form-group">
-    {{ Form::label('file', Lang::get('common/common.file'), array('class' => 'control_label')) }}
-    {{ Form::file('file', null, array('class' => 'form-control')) }}
+    {{ Form::file('uploads[]', array('multiple'=>true), null, array('class' => 'form-control')) }}
 </div>
 <div class="form-group">
     {{ Form::label('tree_name', Lang::get('gedcom/gedcoms/table.tree_name'), array('class' => 'control_label')) }}

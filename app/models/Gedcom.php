@@ -31,7 +31,6 @@ protected $table = 'gedcoms';
 * @var array
 */
 public static $rules = array(
-'file' => 'required',
 'tree_name' => 'required',
 );
 /**
