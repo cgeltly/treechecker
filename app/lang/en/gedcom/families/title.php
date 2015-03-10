@@ -2,7 +2,7 @@
 
 return array(
 
-	'families_management'    => 'GEDCOM Families Management',
+	'families_search'        => 'Families Search',
 	'show_family'            => 'Show family',
 
 );

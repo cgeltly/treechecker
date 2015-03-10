@@ -2,10 +2,10 @@
 
 return array(
 
-	'gedcom_management'     => 'GEDCOMs Management',
-	'edit'                  => 'Edit a GEDCOM listing',
-	'upload'                => 'Upload a new GEDCOM',
-	'delete'                => 'Delete a GEDCOM listing',
-	'show_gedcom'           => 'GEDCOM',
+	'gedcom_management'         => 'File Management',
+	'edit'                  => 'Edit a file listing',
+	'upload'                => 'Upload a new file',
+	'delete'                => 'Delete a file listing',
+	'file_stats'            => 'Tree statistics',
 
 );

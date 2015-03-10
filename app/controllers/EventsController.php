@@ -39,7 +39,13 @@ class EventsController extends BaseController
      */
     public function getIndex()
     {
-        $this->layout->content = View::make('gedcom/events/index');
+        $source = 'events/data';
+        $count = $this->getCount();
+        $title = Lang::get('gedcom/events/title.events_search');
+        $subtitle = Lang::get('gedcom/events/subtitle.result_multiple_trees');        
+        $this->layout->content = View::make('gedcom/events/index', compact('source', 'count', 'title', 'subtitle'));        
+        
+        
     }
 
     /**
@@ -48,12 +54,22 @@ class EventsController extends BaseController
      */
     public function getData()
     {
-        $events = GedcomEvent::leftJoin('individuals', 'individuals.id', '=', 'events.indi_id')
+        $user = Auth::user();
+        
+        $events = GedcomEvent::leftJoin('gedcoms AS g', 'events.gedcom_id', '=', 'g.id')
+                ->leftJoin('individuals', 'individuals.id', '=', 'events.indi_id')
                 ->leftJoin('families', 'families.id', '=', 'events.fami_id')
                 ->select(array('individuals.gedcom_key AS indi', 
-                    'families.gedcom_key AS fami', 
-                    'events.event', 'events.date', 'events.place',
-                    'events.indi_id', 'events.fami_id'));
+                'families.gedcom_key AS fami', 
+                'events.event', 'events.date', 'events.place',
+                'events.indi_id', 'events.fami_id'));
+        
+                $events->take(100);        
+        
+                if ($user->role != 'admin')
+                {
+                    $events->where('g.user_id', $user->id);
+                }
 
         return Datatables::of($events)
                         ->edit_column('indi', '{{ $indi_id ? HTML::link("individuals/show/" . $indi_id, $indi) : "" }}')
@@ -62,5 +78,31 @@ class EventsController extends BaseController
                         ->remove_column('fami_id')
                         ->make();
     }
+    
+    /**
+     * Count the number of events in all of users files
+     * @param int $id
+     * @return int
+     */
+    public function getCount()
+    {
+        $user = Auth::user();
+        
+        $events = User::leftJoin('gedcoms', 'users.id', '=', 'gedcoms.user_id')
+                ->leftJoin('events', 'gedcoms.id', '=', 'events.gedcom_id');
+        
+                //admin can see all files, other users see their own only
+                if ($user->role != 'admin')
+                {
+                    $events->where('users.id', $user->id);
+                }
+                else
+                {
+                    $events->where('users.id', 'LIKE', '%');
+                }    
+        
+        return $events->count();
+    }    
+    
 
 }

@@ -8,7 +8,7 @@ return array(
 	'notes'                 => 'Notes',
 	'key'                   => 'GEDCOM key',
 	'gedcom'                => 'GEDCOM',
-	'gedcoms'               => 'GEDCOMs',
+	'files'                 => 'Files',
     	'upload'                => 'Upload',
 
 );

@@ -47,4 +47,22 @@ class BaseController extends Controller
         }
     }
 
+        
+    /**
+    * Allow access only where the data belongs to the user, or user is admin 
+    * @param int $user_id
+    * @return true|false 
+    */
+    protected function allowedAccess($user_id) 
+    {
+
+        if (($user_id == Auth::user()->id) || (Auth::user()->role == 'admin'))
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
 }

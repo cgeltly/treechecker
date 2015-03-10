@@ -1,8 +1,11 @@
 
 <div class="page-header">
     <h3>
-        @lang('gedcom/events/title.events_management')
+        {{ $title }}
     </h3>
+    <h4>
+        {{ $count }} {{ $subtitle }}
+    </h4>
 </div>
 
 <table id="events" class="table table-striped table-hover">

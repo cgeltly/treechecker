@@ -3,6 +3,9 @@
     <h3>
         {{ $title }}
     </h3>
+    <h4>
+        {{ $count }} {{ $subtitle }}
+    </h4>
 </div>
 
 <table id="individuals" class="table table-striped table-hover">

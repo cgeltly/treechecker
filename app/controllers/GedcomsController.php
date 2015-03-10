@@ -59,67 +59,76 @@ class GedcomsController extends BaseController
      */
     public function getShow($id)
     {
+    
         $gedcom = Gedcom::findOrFail($id);
-
-        if (!$gedcom->parsed)
+                
+        if ($this->allowedAccess($gedcom->user_id)) 
         {
-            // TODO: this is a bit too much of course
-            App::abort(403, 'GEDCOM not parsed yet');
+        
+            if (!$gedcom->parsed)
+            {
+                // TODO: this is a bit too much of course
+                App::abort(403, 'GEDCOM not parsed yet');
+            }
+
+            $individuals = $gedcom->individuals();
+            $all_ind = $individuals->count();
+            $males = $individuals->sex('m')->count();
+            $females = $gedcom->individuals()->sex('f')->count();
+
+            $indi_events = $gedcom->individualEvents()->count();
+            $fami_events = $gedcom->familyEvents()->count();
+            $births = $gedcom->individualEvents()->whereEvent('BIRT');
+            $deaths = $gedcom->individualEvents()->whereEvent('DEAT');
+
+            $fam_count = $gedcom->families()->count();
+
+            $max_fam_size = $gedcom->childrenThroughFamily()
+                    ->groupBy('fami_id')
+                    ->get(array('fami_id', DB::raw('count(*) as count')))
+                    ->max('count');
+
+            $sum_fam_size = $gedcom->childrenThroughFamily()
+                    ->groupBy('fami_id')
+                    ->get(array('fami_id', DB::raw('count(*) as count')))
+                    ->sum('count');
+
+            //this gives number of families with children, whereas fam_count gives all families
+            $num_fams_with_children = $gedcom->childrenThroughFamily()
+                    ->groupBy('fami_id')
+                    ->get(array('fami_id', DB::raw('count(*)')))
+                    ->count();
+
+            $avg_fam_size = $this->percentage($sum_fam_size, $num_fams_with_children, 1);
+
+            $statistics = array(
+                'all_ind' => $all_ind,
+                'males' => sprintf('%d (%.2f%%)', $males, $this->percentage($males, $all_ind)),
+                'females' => sprintf('%d (%.2f%%)', $females, $this->percentage($females, $all_ind)),
+                'unknowns' => $gedcom->individuals()->sex('u')->count(),
+                'sex_ratio' => $this->percentage($males, $males + $females, 1),
+                'min_birth' => $births->min('date'),
+                'max_birth' => $births->max('date'),
+                'min_death' => $deaths->min('date'),
+                'max_death' => $deaths->max('date'),
+                'total_events' => $indi_events + $fami_events,
+                'indi_events' => $indi_events,
+                'fami_events' => $fami_events,
+                'avg_age' => number_format($gedcom->avg_lifespan(), 2),
+                'max_age' => $gedcom->max_lifespan(),
+                'min_age' => $gedcom->min_lifespan(),
+                'all_fami' => $fam_count,
+                'fams_with_children' => sprintf('%d (%.2f%%)', $num_fams_with_children, $this->percentage($num_fams_with_children, $fam_count)),
+                'avg_fam_size' => $avg_fam_size,
+                'max_fam_size' => $max_fam_size,
+            );
+
+            $this->layout->content = View::make('gedcom/gedcoms/detail', compact('gedcom', 'statistics'));
         }
-
-        $individuals = $gedcom->individuals();
-        $all_ind = $individuals->count();
-        $males = $individuals->sex('m')->count();
-        $females = $gedcom->individuals()->sex('f')->count();
-
-        $indi_events = $gedcom->individualEvents()->count();
-        $fami_events = $gedcom->familyEvents()->count();
-        $births = $gedcom->individualEvents()->whereEvent('BIRT');
-        $deaths = $gedcom->individualEvents()->whereEvent('DEAT');
-
-        $fam_count = $gedcom->families()->count();
-
-        $max_fam_size = $gedcom->childrenThroughFamily()
-                ->groupBy('fami_id')
-                ->get(array('fami_id', DB::raw('count(*) as count')))
-                ->max('count');
-
-        $sum_fam_size = $gedcom->childrenThroughFamily()
-                ->groupBy('fami_id')
-                ->get(array('fami_id', DB::raw('count(*) as count')))
-                ->sum('count');
-
-        //this gives number of families with children, whereas fam_count gives all families
-        $num_fams_with_children = $gedcom->childrenThroughFamily()
-                ->groupBy('fami_id')
-                ->get(array('fami_id', DB::raw('count(*)')))
-                ->count();
-
-        $avg_fam_size = $this->percentage($sum_fam_size, $num_fams_with_children, 1);
-
-        $statistics = array(
-            'all_ind' => $all_ind,
-            'males' => sprintf('%d (%.2f%%)', $males, $this->percentage($males, $all_ind)),
-            'females' => sprintf('%d (%.2f%%)', $females, $this->percentage($females, $all_ind)),
-            'unknowns' => $gedcom->individuals()->sex('u')->count(),
-            'sex_ratio' => $this->percentage($males, $males + $females, 1),
-            'min_birth' => $births->min('date'),
-            'max_birth' => $births->max('date'),
-            'min_death' => $deaths->min('date'),
-            'max_death' => $deaths->max('date'),
-            'total_events' => $indi_events + $fami_events,
-            'indi_events' => $indi_events,
-            'fami_events' => $fami_events,
-            'avg_age' => number_format($gedcom->avg_lifespan(), 2),
-            'max_age' => $gedcom->max_lifespan(),
-            'min_age' => $gedcom->min_lifespan(),
-            'all_fami' => $fam_count,
-            'fams_with_children' => sprintf('%d (%.2f%%)', $num_fams_with_children, $this->percentage($num_fams_with_children, $fam_count)),
-            'avg_fam_size' => $avg_fam_size,
-            'max_fam_size' => $max_fam_size,
-        );
-
-        $this->layout->content = View::make('gedcom/gedcoms/detail', compact('gedcom', 'statistics'));
+        else 
+        {
+            return Response::make('Unauthorized', 401);
+        }
     }
 
     /**
@@ -138,7 +147,16 @@ class GedcomsController extends BaseController
     public function getEdit($id)
     {
         $gedcom = Gedcom::findOrFail($id);
-        $this->layout->content = View::make('gedcom/gedcoms/edit')->with('gedcom', $gedcom);
+                
+        if ($this->allowedAccess($gedcom->user_id)) 
+        {
+            $this->layout->content = View::make('gedcom/gedcoms/edit')->with('gedcom', $gedcom);
+        }
+        else 
+        {
+            return Response::make('Unauthorized', 401);
+        }
+        
     }
 
     /**
@@ -149,20 +167,28 @@ class GedcomsController extends BaseController
     public function postUpdate($id)
     {
         $gedcom = Gedcom::findOrFail($id);
-        $validator = Validator::make(Input::all(), Gedcom::$update_rules);
+                
+        if ($this->allowedAccess($gedcom->user_id)) 
+        {      
+            $validator = Validator::make(Input::all(), Gedcom::$update_rules);
 
-        if ($validator->passes())
-        {
-            $gedcom->tree_name = Input::get('tree_name');
-            $gedcom->source = Input::get('source');
-            $gedcom->notes = Input::get('notes');
-            $gedcom->save();
+            if ($validator->passes())
+            {
+                $gedcom->tree_name = Input::get('tree_name');
+                $gedcom->source = Input::get('source');
+                $gedcom->notes = Input::get('notes');
+                $gedcom->save();
 
-            return Redirect::to('gedcoms/index')->with('message', 'The GEDCOM ' . $gedcom->file_name . ' has been updated.');
+                return Redirect::to('gedcoms/index')->with('message', 'The GEDCOM ' . $gedcom->file_name . ' has been updated.');
+            }
+            else
+            {
+                return Redirect::to('gedcoms/edit/' . $id)->withErrors($validator)->withInput();
+            }
         }
-        else
+        else 
         {
-            return Redirect::to('gedcoms/edit/' . $id)->withErrors($validator)->withInput();
+            return Response::make('Unauthorized', 401);
         }
     }
 
@@ -172,9 +198,19 @@ class GedcomsController extends BaseController
     public function getIndividuals($id)
     {
         $gedcom = Gedcom::findOrFail($id);
-        $source = 'gedcoms/indidata/' . $id;
-        $title = $gedcom->tree_name;
-        $this->layout->content = View::make('gedcom/individuals/index', compact('source', 'title'));
+                
+        if ($this->allowedAccess($gedcom->user_id)) 
+        {
+            $source = 'gedcoms/indidata/' . $id;
+            $title = $gedcom->tree_name;
+            $subtitle = Lang::get('gedcom/individuals/subtitle.result_one_tree');
+            $count = $gedcom->individuals()->count();  
+            $this->layout->content = View::make('gedcom/individuals/index', compact('source', 'title', 'subtitle', 'count'));
+        }
+        else 
+        {
+            return Response::make('Unauthorized', 401);
+        }
     }
 
     /**
@@ -183,9 +219,19 @@ class GedcomsController extends BaseController
     public function getFamilies($id)
     {
         $gedcom = Gedcom::findOrFail($id);
-        $source = 'gedcoms/famidata/' . $id;
-        $title = $gedcom->tree_name;
-        $this->layout->content = View::make('gedcom/families/index', compact('source', 'title'));
+                
+        if ($this->allowedAccess($gedcom->user_id)) 
+        {
+            $source = 'families/data/' . $id;
+            $title = $gedcom->tree_name;
+            $subtitle = Lang::get('gedcom/families/subtitle.result_one_tree');
+            $count = $gedcom->families()->count();      
+            $this->layout->content = View::make('gedcom/families/index', compact('source', 'title', 'subtitle', 'count'));
+        }    
+        else 
+        {
+            return Response::make('Unauthorized', 401);
+        }
     }
 
     /**
@@ -196,17 +242,24 @@ class GedcomsController extends BaseController
     public function getDelete($id)
     {
         $gedcom = Gedcom::findOrFail($id);
+                
+        if ($this->allowedAccess($gedcom->user_id)) 
+        {
+            //delete database entries
+            $gedcom->delete();
 
-        //delete database entries
-        $gedcom->delete();
+            $user_dir = storage_path() . '/uploads/' . Auth::id() . '/';
+            $files_dir = bin2hex($gedcom->file_name);
 
-        $user_dir = storage_path() . '/uploads/' . Auth::id() . '/';
-        $files_dir = bin2hex($gedcom->file_name);
+            chdir($user_dir);
+            $this->removeDir($files_dir);
 
-        chdir($user_dir);
-        $this->removeDir($files_dir);
-
-        return Redirect::to('gedcoms/index')->with('message', 'Gedcom successfully deleted');
+            return Redirect::to('gedcoms/index')->with('message', 'Gedcom successfully deleted');
+        }
+        else 
+        {
+            return Response::make('Unauthorized', 401);
+        }
     }
 
     public function getHistogram()
@@ -223,13 +276,13 @@ class GedcomsController extends BaseController
 
         // FIXME: do this properly via the model.
         $raw = "select ucount, count(*) as count
-from (select count(children.id) as ucount 
-    from `families` 
-    left join `children` on `families`.`id` = `children`.`fami_id` 
-    where `families`.`gedcom_id` = 11
-    group by families.id) as x
-    group by x.ucount
-    order by x.ucount";
+        from (select count(children.id) as ucount 
+        from `families` 
+        left join `children` on `families`.`id` = `children`.`fami_id` 
+        where `families`.`gedcom_id` = 11
+        group by families.id) as x
+        group by x.ucount
+        order by x.ucount";
 
         $results = DB::select(DB::raw($raw));
 
@@ -256,6 +309,7 @@ from (select count(children.id) as ucount
         $user = Auth::user();
 
         $gedcoms = Gedcom::select(array('file_name', 'tree_name', 'source', 'notes', 'parsed', 'id'));
+
         if ($user->role != 'admin')
         {
             $gedcoms->where('user_id', $user->id);
@@ -280,6 +334,7 @@ from (select count(children.id) as ucount
     public function getUnparseddata()
     {
         $user = Auth::user();
+        
         $gedcoms = Gedcom::select(array('file_name', 'tree_name', 'source', 'notes', 'parsed', 'id'));
         $gedcoms->where('parsed', 0);
         if ($user->role != 'admin')
@@ -302,11 +357,20 @@ from (select count(children.id) as ucount
      */
     public function getIndidata($id)
     {
-        $individuals = GedcomIndividual::select(array('gedcom_key', 'first_name', 'last_name', 'sex', 'id'))->where('gedcom_id', $id);
+        $user = Auth::user();
+        
+        $individuals = GedcomIndividual::leftJoin('gedcoms', 'gedcoms.id', '=', 'individuals.gedcom_id')
+            ->select(array('individuals.gedcom_key', 'individuals.first_name', 'individuals.last_name', 'individuals.sex', 'individuals.id'));
+        $individuals->where('gedcom_id', $id);
+        if ($user->role != 'admin')
+        {
+            $individuals->where('gedcoms.user_id', $user->id);
+        }
+        
         return Datatables::of($individuals)
-                        ->edit_column('gedcom_key', '{{ HTML::link("individuals/show/" . $id, $gedcom_key) }}')
-                        ->remove_column('id')
-                        ->make();
+                ->edit_column('gedcom_key', '{{ HTML::link("individuals/show/" . $id, $gedcom_key) }}')
+                ->remove_column('id')
+                ->make();
     }
 
     /**
@@ -315,13 +379,22 @@ from (select count(children.id) as ucount
      */
     public function getFamidata($id)
     {
-        $families = GedcomFamily::select(array('gedcom_key', 'indi_id_husb', 'indi_id_wife', 'id'))->where('gedcom_id', $id);
+        $user = Auth::user();
+        
+        $families = GedcomFamily::leftJoin('gedcoms', 'gedcoms.id', '=', 'families.gedcom_id')
+            ->select(array('families.gedcom_key', 'families.indi_id_husb', 'families.indi_id_wife', 'families.id'));
+        $families->where('gedcom_id', $id);
+        if ($user->role != 'admin')
+        {
+            $families->where('gedcoms.user_id', $user->id);
+        }
+        
         return Datatables::of($families)
-                        ->edit_column('gedcom_key', '{{ HTML::link("families/show/" . $id, $gedcom_key) }}')
-                        ->edit_column('indi_id_husb', '{{ $indi_id_husb ? HTML::link("individuals/show/" . $indi_id_husb, $indi_id_husb) : "" }}')
-                        ->edit_column('indi_id_wife', '{{ $indi_id_wife ? HTML::link("individuals/show/" . $indi_id_wife, $indi_id_wife) : "" }}')
-                        ->remove_column('id')
-                        ->make();
+                ->edit_column('gedcom_key', '{{ HTML::link("families/show/" . $id, $gedcom_key) }}')
+                ->edit_column('indi_id_husb', '{{ $indi_id_husb ? HTML::link("individuals/show/" . $indi_id_husb, $indi_id_husb) : "" }}')
+                ->edit_column('indi_id_wife', '{{ $indi_id_wife ? HTML::link("individuals/show/" . $indi_id_wife, $indi_id_wife) : "" }}')
+                ->remove_column('id')
+                ->make();
     }
 
     /**
@@ -373,7 +446,6 @@ from (select count(children.id) as ucount
 
     /**
      * Removes a directory and its contents, recursively.
-     * Found on http://stackoverflow.com/questions/11267086/php-unlink-all-files-within-a-directory-and-then-deleting-that-directory
      * @param string $directory
      */
     private function removeDir($directory)
@@ -391,5 +463,5 @@ from (select count(children.id) as ucount
         }
         rmdir($directory);
     }
-
+    
 }

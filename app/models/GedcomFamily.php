@@ -90,5 +90,5 @@ class GedcomFamily extends Eloquent
     {
         return $this->belongsToMany('GedcomIndividual', 'children', 'fami_id', 'indi_id');
     }
-
+    
 }

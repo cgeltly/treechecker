@@ -2,6 +2,6 @@
 
 return array(
 
-	'events_management'    => 'GEDCOM Events Management',
+	'events_search'          => 'Events Search',
 
 );

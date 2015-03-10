@@ -41,6 +41,10 @@ class ParseController extends BaseController
     {
         // Get the GEDCOM
         $gedcom = Gedcom::findOrFail($gedcom_id);
+                
+        if ($this->allowedAccess($gedcom->user_id)) 
+        {        
+        
         Session::put('progress', 1);
         Session::save();
 
@@ -86,6 +90,12 @@ class ParseController extends BaseController
         Session::save();
 
         return;
+
+        }
+        else 
+        {
+            return Response::make('Unauthorized', 401);
+        }
     }
 
     /**

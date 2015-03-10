@@ -1,7 +1,7 @@
 
 <div class="page-header">
     <h3>
-        @lang('gedcom/gedcoms/title.show_gedcom')
+        @lang('gedcom/gedcoms/title.file_stats')
     </h3>
 </div>    
 

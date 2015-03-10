@@ -2,6 +2,6 @@
 
 return array(
 
-	'errors_management'    => 'GEDCOM Errors Management',
+	'errors_management'    => 'Errors Management',
 
 );

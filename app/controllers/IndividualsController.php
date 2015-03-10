@@ -38,8 +38,10 @@ class IndividualsController extends BaseController
     public function getIndex()
     {
         $source = 'individuals/data';
-        $title = Lang::get('gedcom/individuals/title.individuals_management');
-        $this->layout->content = View::make('gedcom/individuals/index', compact('source', 'title'));
+        $count = $this->getCount();
+        $title = Lang::get('gedcom/individuals/title.individuals_search');
+        $subtitle = Lang::get('gedcom/individuals/subtitle.result_multiple_trees');        
+        $this->layout->content = View::make('gedcom/individuals/index', compact('source', 'count', 'title', 'subtitle'));
     }
     /**
     * Shows the details for a GedcomIndividual
@@ -48,17 +50,36 @@ class IndividualsController extends BaseController
     public function getShow($id)
     {
         $individual = GedcomIndividual::findOrFail($id);
-        $this->layout->content = View::make('gedcom/individuals/detail', compact('individual'));
+        
+        if ($this->allowedAccess($individual->gc->user_id)) 
+        {        
+            $this->layout->content = View::make('gedcom/individuals/detail', compact('individual'));
+        }
+        else 
+        {
+            return Response::make('Unauthorized', 401);
+        } 
     }
+    
     /**
     * Show a list of all the GedcomIndividuals formatted for Datatables.
     * @return Datatables JSON
     */
     public function getData()
     {
+        $user = Auth::user();
+        
         $individuals = GedcomIndividual::leftJoin('gedcoms', 'gedcoms.id', '=', 'individuals.gedcom_id')
         ->select(array('gedcoms.file_name AS gedc', 'gedcoms.id AS gedcom_id',
         'gedcom_key', 'first_name', 'last_name', 'sex', 'individuals.id'));
+        
+        $individuals->take(100);
+        
+        if ($user->role != 'admin')
+        {
+            $individuals->where('gedcoms.user_id', $user->id);
+        }
+        
         return Datatables::of($individuals)
         ->edit_column('gedc', '{{ HTML::link("gedcoms/show/" . $gedcom_id, $gedc) }}')
         ->edit_column('gedcom_key', '{{ HTML::link("individuals/show/" . $id, $gedcom_key) }}')
@@ -72,17 +93,38 @@ class IndividualsController extends BaseController
     */
     public function getEvents($id)
     {
-        $events = GedcomEvent::select(array('event', 'date', 'place'))->where('indi_id', $id);
+        $user = Auth::user();
+        
+        $events = GedcomEvent::leftJoin('gedcoms', 'gedcoms.id', '=', 'events.gedcom_id')
+                ->select(array('events.event', 'events.date', 'events.place'))
+                ->where('events.indi_id', $id);
+        
+        if ($user->role != 'admin')
+        {
+            $events->where('gedcoms.user_id', $user->id);
+        }
+        
         return Datatables::of($events)->make();
     }
+    
     /**
     * Show a list of all the GedcomErrors for the given GedcomIndividual formatted for Datatables.
     * @return Datatables JSON
     */
     public function getErrors($id)
     {
-        $events = GedcomError::select(array('severity', 'message'))->where('indi_id', $id);
-        return Datatables::of($events)->make();
+        $user = Auth::user();        
+        
+        $errors = GedcomError::leftJoin('gedcoms', 'gedcoms.id', '=', 'errors.gedcom_id')
+                ->select(array('errors.severity', 'errors.message'))
+                ->where('errors.indi_id', $id);
+        
+        if ($user->role != 'admin')
+        {
+            $errors->where('gedcoms.user_id', $user->id);
+        }        
+                
+        return Datatables::of($errors)->make();
     }
     /**
     * Creates the ancestor family tree in JSON format for a GedcomIndividual
@@ -92,9 +134,18 @@ class IndividualsController extends BaseController
     public function getAncestors($id)
     {
         $individual = GedcomIndividual::findOrFail($id);
-        $tree_part = $this->toAncestorTree($individual, 2); // 2 levels deep (TODO: configurable?)
-        return Response::json($tree_part);
+        
+        if ($this->allowedAccess($individual->gc->user_id)) 
+        {
+            $tree_part = $this->toAncestorTree($individual, 2); // 2 levels deep (TODO: configurable?)
+            return Response::json($tree_part);
+        }
+        else 
+        {
+            return Response::make('Unauthorized', 401);
+        }       
     }
+    
     /**
     * Creates the descendant family tree in JSON format for a GedcomIndividual
     * @param int $id
@@ -103,9 +154,18 @@ class IndividualsController extends BaseController
     public function getDescendants($id)
     {
         $individual = GedcomIndividual::findOrFail($id);
-        $tree_part = $this->toDescendantTree($individual, 2); // 2 levels deep (TODO: configurable?)
-        return Response::json($tree_part);
+        
+        if ($this->allowedAccess($individual->gc->user_id)) 
+        {        
+            $tree_part = $this->toDescendantTree($individual, 2); // 2 levels deep (TODO: configurable?)
+            return Response::json($tree_part);
+        }
+        else 
+        {
+            return Response::make('Unauthorized', 401);
+        }
     }
+    
     /**
     * Turns a GedcomIndividual into an ancestor tree representation
     * @param GedcomIndividual $individual
@@ -198,4 +258,31 @@ class IndividualsController extends BaseController
         'url' => URL::to('individuals/show/' . $individual->id),
         );
     }
+    
+    /**
+     * Count the number of individuals in all of users files
+     * @param int $id
+     * @return int
+     */
+    public function getCount()
+    {
+        $user = Auth::user();
+        
+        $individuals = User::leftJoin('gedcoms', 'users.id', '=', 'gedcoms.user_id')
+                ->leftJoin('individuals', 'gedcoms.id', '=', 'individuals.gedcom_id');
+        
+                //admin can see all files, other users see their own only
+                if ($user->role != 'admin')
+                {
+                    $individuals->where('users.id', $user->id);
+                }
+                else
+                {
+                    $individuals->where('users.id', 'LIKE', '%');
+                }    
+        
+        return $individuals->count();
+    }
+    
+    
 }
