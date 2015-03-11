@@ -48,6 +48,7 @@ class FileUploadsController extends BaseController
             
             
             // Create a file storage directory based on user id and hex of file name
+            // TODO: uploads directory as variable
             $abs_storage_dir = storage_path() . '/uploads/' . Auth::id() . '/' . bin2hex($orig_file_name);
             $rel_storage_dir = '/' . Auth::id() . '/' . bin2hex($orig_file_name);
 

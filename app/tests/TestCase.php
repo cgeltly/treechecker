@@ -64,7 +64,7 @@ class TestCase extends Illuminate\Foundation\Testing\TestCase
         $file = new UploadedFile(__DIR__ . 'copy.ged', $filename, 'txt');
 
         // Call the controller
-        $this->call('POST', 'fileuploads/upload', array('tree_name' => 'test_tree'), array('file' => $file));
+        $this->call('POST', 'fileuploads/upload', array('tree_name' => 'test_tree'), array('uploads' => array($file)));
     }
     
     public function parseFile($filename)
