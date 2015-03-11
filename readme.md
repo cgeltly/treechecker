@@ -23,6 +23,7 @@ The Laravel Eloquent ORM makes querying a breeze and allows for rapid developmen
 #### Database seeding
 
 - Create a database called treechecker on your local MySQL installation. 
+- (optional) Add your machine to `bootstrap/start.php` as a local environment. 
 - Check the settings in `app/config/database.php` to see whether the connection details for the database are correct. You might need to change database names or access credentials. 
 - To migrate and seed the database (see http://laravel.com/docs/migrations for more info), use `php artisan migrate --seed`. 
 
@@ -38,7 +39,7 @@ The Laravel Eloquent ORM makes querying a breeze and allows for rapid developmen
     - [DataTables](http://datatables.net/)
     - [D3.js](http://d3js.org/)
     - [Google Charts](https://developers.google.com/chart/)
-- The front-end can be launched by going to `localhost/gedcomcheck/public/home` in your browser. 
+- The front-end can be launched by going to `localhost/treechecker/public/home` in your browser. 
 
 ### Testing
 - TreeChecker is set up to use [PHPUnit](https://phpunit.de/). You can run the tests by calling `phpunit` in a terminal. 

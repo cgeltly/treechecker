@@ -9,5 +9,3 @@ Thumbs.db
 
 /app/storage/debugbar
 /nbproject
-/app/config/database.php
-/bootstrap/start.php
