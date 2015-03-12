@@ -23,14 +23,14 @@
 
 class ParseController extends BaseController
 {
-    
+
     public function __construct()
     {
         parent::__construct();
-        
+
         //prevent access to controller methods without login
         $this->beforeFilter('auth');
-    }    
+    }
 
     /**
      * Parses a Gedcom and creates parse errors when necessary.
@@ -41,58 +41,53 @@ class ParseController extends BaseController
     {
         // Get the GEDCOM
         $gedcom = Gedcom::findOrFail($gedcom_id);
-                
-        if ($this->allowedAccess($gedcom->user_id)) 
-        {        
-        
-        Session::put('progress', 1);
-        Session::save();
 
-        // Delete the related individuals, families and errors
-        $gedcom->individuals()->delete();
-        $gedcom->families()->delete();
-        $gedcom->geocodes()->delete();
-        $gedcom->errors()->delete();
-        Session::put('progress', 2);
-        Session::save();
-
-        // Retrieve the file folder
-        $rel_storage_dir = $gedcom->path;
-        $default_path = storage_path() . DIRECTORY_SEPARATOR . 'uploads';
-        $abs_storage_dir = $default_path . $rel_storage_dir;
-        chdir($abs_storage_dir);
-
-        // Set some definitions
-        $this->setDefines($gedcom_id);
-
-
-        $filecount = 0;
-        $files = glob("*");
-        if ($files)
+        if ($this->allowedAccess($gedcom->user_id))
         {
-            $filecount = count($files);
-        }
-         
-        // Loop through the chunked files and parse/import them
-        for ($i = 1; file_exists($i); ++$i)
-        {
-            $this->importRecords($i, $gedcom_id);
-            Session::put('progress', min(floor(($i/$filecount)*100), 99));
+            Session::put('progress', 1);
             Session::save();
+
+            // Delete the related individuals, families and errors
+            $gedcom->individuals()->delete();
+            $gedcom->families()->delete();
+            $gedcom->geocodes()->delete();
+            $gedcom->errors()->delete();
+            Session::put('progress', 2);
+            Session::save();
+
+            // Retrieve the file folder
+            $abs_storage_dir = Config::get('app.upload_dir') . $gedcom->path;
+            chdir($abs_storage_dir);
+
+            // Set some definitions
+            $this->setDefines($gedcom_id);
+
+            $filecount = 0;
+            $files = glob("*");
+            if ($files)
+            {
+                $filecount = count($files);
+            }
+
+            // Loop through the chunked files and parse/import them
+            for ($i = 1; file_exists($i); ++$i)
+            {
+                $this->importRecords($i, $gedcom_id);
+                Session::put('progress', min(floor(($i / $filecount) * 100), 99));
+                Session::save();
+            }
+
+            // Set the file as parsed, but not checked for errors
+            $gedcom->parsed = true;
+            $gedcom->error_checked = false;
+            $gedcom->save();
+
+            Session::put('progress', 100);
+            Session::save();
+
+            return;
         }
-
-        // Set the file as parsed, but not checked for errors
-        $gedcom->parsed = true;
-        $gedcom->error_checked = false;
-        $gedcom->save();
-
-        Session::put('progress', 100);
-        Session::save();
-
-        return;
-
-        }
-        else 
+        else
         {
             return Response::make('Unauthorized', 401);
         }
@@ -143,12 +138,12 @@ class ParseController extends BaseController
         DB::connection()->disableQueryLog();
         DB::beginTransaction();
 
-            // Split records per 0 line and import
-            foreach (preg_split('/\n+(?=0)/', $gedcom) as $record)
-            {
-                $this->importRecord($record, $gedcom_id);
-            }
-     
+        // Split records per 0 line and import
+        foreach (preg_split('/\n+(?=0)/', $gedcom) as $record)
+        {
+            $this->importRecord($record, $gedcom_id);
+        }
+
         // End the transaction
         DB::commit();
     }
@@ -165,7 +160,7 @@ class ParseController extends BaseController
         // Standardise gedcom format
         $gedrec = \Webtrees\Import::reformat_record_import($gedcom);
         // import different types of records
-    
+
         if (preg_match('/^0 @(' . WT_REGEX_XREF . ')@ (' . WT_REGEX_TAG . ')/', $gedrec, $match))
         {
             list(, $xref, $type) = $match;
@@ -228,7 +223,7 @@ class ParseController extends BaseController
         $name = $record->getAllNames()[0];
         $givn = trim($name["givn"]);
         $surname = trim($name["surname"]);
-        
+
         $individual = new GedcomIndividual();
         $individual->gedcom_id = $gedcom_id;
         $individual->first_name = $givn;
@@ -238,7 +233,7 @@ class ParseController extends BaseController
         $individual->gedcom = $gedrec;
         $individual->save();
 
-        $this->processEvents($record, $gedcom_id, $individual->id);        
+        $this->processEvents($record, $gedcom_id, $individual->id);
     }
 
     /**
@@ -291,7 +286,6 @@ class ParseController extends BaseController
         $this->processEvents($record, $gedcom_id, NULL, $family->id);
     }
 
-    
     /**
      * Create Geocode (place definition) record 
      * @param string $gedrec
@@ -303,15 +297,14 @@ class ParseController extends BaseController
         //deafult null values for attributes
         $place = null;
         $latitude = 99.9999999;
-        $longitude = 999.9999999;    
-        
-        if (preg_match('/(?:0 _PLAC) +(.+)/', $gedrec, $match))   
-        {        
+        $longitude = 999.9999999;
+
+        if (preg_match('/(?:0 _PLAC) +(.+)/', $gedrec, $match))
+        {
 
             //'RootsMagic' and 'Next Generation of Genealogy Sitebuilding' 
             //GEDCOM exports have separate place definitions under the _PLAC tag, 
             //which may be linked to events via the place name, e.g.
-
             //0 @I1235@ INDI
             //1 BIRT
             //2 DATE 1689
@@ -326,13 +319,12 @@ class ParseController extends BaseController
             {
                 $place = $match[1];
             }
-            
+
             //Match LATI/LONG in RootsMagic files, which use N,S,W,E in the coordinates 
-            if (preg_match('/\n2 LATI (N|S)(\d{1,2})(,|.)(\d{1,7})/', $gedrec, $match))                    
+            if (preg_match('/\n2 LATI (N|S)(\d{1,2})(,|.)(\d{1,7})/', $gedrec, $match))
             {
                 //$match[1] = N or S; $match[2] = degree integer; $match[3] = decimal point/comma 
                 //$match[4] = numbers after decimal
-
                 //convert to numeric latitude - negative if southern hemisphere
                 switch ($match[1])
                 {
@@ -340,18 +332,17 @@ class ParseController extends BaseController
                         $latitude = $match[2] . '.' . $match[4];
                         break;
                     case 'S':
-                        $latitude = ($match[2]*-1) . '.' . $match[4];
+                        $latitude = ($match[2] * -1) . '.' . $match[4];
                         break;
                     default:
                         break;
-                }                        
-            }                
+                }
+            }
 
-            if (preg_match('/\n2 LONG (W|E)(\d{1,3})(,|.)(\d{1,7})/', $gedrec, $match))                    
+            if (preg_match('/\n2 LONG (W|E)(\d{1,3})(,|.)(\d{1,7})/', $gedrec, $match))
             {
                 //$match[1] = N or S; $match[2] = degree integer; $match[3] = decimal point/comma 
                 //$match[4] = numbers after decimal
-
                 //convert to numeric latitude - negative if western hemisphere
                 switch ($match[1])
                 {
@@ -359,33 +350,31 @@ class ParseController extends BaseController
                         $longitude = $match[2] . '.' . $match[4];
                         break;
                     case 'W':
-                        $longitude = ($match[2]*-1) . '.' . $match[4];
+                        $longitude = ($match[2] * -1) . '.' . $match[4];
                         break;
                     default:
                         break;
-                }                        
-            }              
+                }
+            }
 
             //Match LATI/LONG in 'Next Generation of Genealogy Sitebuilding' files, 
             //which do not use N,S,W,E in the coordinates 
-            if (preg_match('/\n2 LATI (-|)(\d{1,2})(,|.)(\d{1,7})/', $gedrec, $match))                    
+            if (preg_match('/\n2 LATI (-|)(\d{1,2})(,|.)(\d{1,7})/', $gedrec, $match))
             {
                 //$match[1] = - or NULL; $match[2] = degree integer; $match[3] = decimal point/comma 
                 //$match[4] = numbers after decimal
 
                 $latitude = $match[1] . $match[2] . $match[3] . $match[4];
-            
             }
-            
-            if (preg_match('/\n2 LONG (-|)(\d{1,3})(,|.)(\d{1,7})/', $gedrec, $match))                    
+
+            if (preg_match('/\n2 LONG (-|)(\d{1,3})(,|.)(\d{1,7})/', $gedrec, $match))
             {
                 //$match[1] = - or NULL; $match[2] = degree integer; $match[3] = decimal point/comma 
                 //$match[4] = numbers after decimal
 
                 $longitude = $match[1] . $match[2] . $match[3] . $match[4];
-            }            
+            }
         }
-            
         elseif (preg_match('/0 _PLAC_DEFN/', $gedrec))
         {
             //'Legacy' GEDCOM exports program have separate place definitions 
@@ -402,19 +391,18 @@ class ParseController extends BaseController
             //2 MAP
             //3 LATI N51.2
             //3 LONG E5.41666666666667
-            
+
             if (preg_match('/(?:1 PLAC) +(.+)/', $gedrec, $match))
             {
                 $place = $match[1];
-            }            
-            
+            }
+
             //Match LATI/LONG, which use N,S,W,E in the coordinates 
             //and may exclude any decimals
-            if (preg_match('/\n3 LATI (N|S)(\d{1,2})(.\d{1,7}.*?)?/', $gedrec, $match))                    
+            if (preg_match('/\n3 LATI (N|S)(\d{1,2})(.\d{1,7}.*?)?/', $gedrec, $match))
             {
                 //$match[1] = N or S; $match[2] = degree integer; 
                 //$match[3] = decimal point and numbers after
-              
                 //convert to numeric latitude - negative if southern hemisphere
                 switch ($match[1])
                 {
@@ -422,19 +410,17 @@ class ParseController extends BaseController
                         $latitude = $match[2] . $this->decimalsExist($match);
                         break;
                     case 'S':
-                        $latitude = ($match[2]*-1) . $this->decimalsExist($match);
+                        $latitude = ($match[2] * -1) . $this->decimalsExist($match);
                         break;
                     default:
                         break;
-                }                        
-               
-            }                
+                }
+            }
 
-            if (preg_match('/\n3 LONG (W|E)(\d{1,3})(.\d{1,7}.*?)?/', $gedrec, $match))                    
+            if (preg_match('/\n3 LONG (W|E)(\d{1,3})(.\d{1,7}.*?)?/', $gedrec, $match))
             {
                 //$match[1] = N or S; $match[2] = degree integer; 
                 //$match[3] = decimal point and numbers after
-
                 //$numbers = $match[3];
                 //convert to numeric latitude - negative if western hemisphere
                 switch ($match[1])
@@ -443,14 +429,14 @@ class ParseController extends BaseController
                         $longitude = $match[2] . $this->decimalsExist($match);
                         break;
                     case 'W':
-                        $longitude = ($match[2]*-1) . $this->decimalsExist($match);
+                        $longitude = ($match[2] * -1) . $this->decimalsExist($match);
                         break;
                     default:
                         break;
-                }                        
-            }              
-        }        
-        
+                }
+            }
+        }
+
         $geocode = new GedcomGeocode();
         $geocode->gedcom_id = $gedcom_id;
         $geocode->place = $place;
@@ -459,23 +445,24 @@ class ParseController extends BaseController
         $geocode->gedcom = $gedrec;
         $geocode->save();
     }
-    
+
     /*
      * Checks for missing decimal numbers and returns blank string if so.
      * @param array $match
      */
-    private function decimalsExist($match) 
+
+    private function decimalsExist($match)
     {
-        if (!array_key_exists(3, $match)) 
+        if (!array_key_exists(3, $match))
         {
             return '';
         }
         else
         {
             return $match[3];
-        }    
+        }
     }
-    
+
     /**
      * Creates the GedcomChildren for a GedcomFamily. 
      * @param string $record
@@ -528,15 +515,14 @@ class ParseController extends BaseController
             $date = $this->retrieveDate($fact, $gedcom_id, $indi_id, $fami_id);
             $place = $this->retrievePlace($fact);
             $latitude = $this->retrieveLati($fact);
-            $longitude = $this->retrieveLong($fact);            
+            $longitude = $this->retrieveLong($fact);
 
             //Match LATI/LONG, which use N,S,W,E in the coordinates 
             //and may exclude the decimal
-            if (preg_match('/(N|S)(\d{1,2})(.\d{1,7}.*?)?/', $latitude, $match))                    
+            if (preg_match('/(N|S)(\d{1,2})(.\d{1,7}.*?)?/', $latitude, $match))
             {
                 //$match[1] = N or S; $match[2] = degree integer; 
                 //$match[3] = decimal point and numbers after
-              
                 //convert to numeric latitude - negative if southern hemisphere
                 switch ($match[1])
                 {
@@ -544,19 +530,17 @@ class ParseController extends BaseController
                         $latitude = $match[2] . $this->decimalsExist($match);
                         break;
                     case 'S':
-                        $latitude = ($match[2]*-1) . $this->decimalsExist($match);
+                        $latitude = ($match[2] * -1) . $this->decimalsExist($match);
                         break;
                     default:
                         break;
-                }                        
-               
-            }                
-            
-            if (preg_match('/(W|E)(\d{1,3})(.\d{1,7}.*?)?/', $longitude, $match))                    
+                }
+            }
+
+            if (preg_match('/(W|E)(\d{1,3})(.\d{1,7}.*?)?/', $longitude, $match))
             {
                 //$match[1] = N or S; $match[2] = degree integer; 
                 //$match[3] = decimal point and numbers after
-
                 //convert to numeric latitude - negative if western hemisphere
                 switch ($match[1])
                 {
@@ -564,12 +548,12 @@ class ParseController extends BaseController
                         $longitude = $match[2] . $this->decimalsExist($match);
                         break;
                     case 'W':
-                        $longitude = ($match[2]*-1) . $this->decimalsExist($match);
+                        $longitude = ($match[2] * -1) . $this->decimalsExist($match);
                         break;
                     default:
                         break;
-                }                        
-            }             
+                }
+            }
 
             // Create the event, except with the following tags:
             // CHAN 
@@ -587,8 +571,8 @@ class ParseController extends BaseController
             // SEX
             //NOTE
             //SOUR
-            if (!in_array($fact->getTag(), array('CHAN', 'NEW', '_UID', 'FAMS', 'FAMC', 'CHIL', 
-                'NAME', 'CREA', '_FID', 'OBJE', 'HUSB', 'WIFE', 'SEX', 'NOTE', 'SOUR', )))
+            if (!in_array($fact->getTag(), array('CHAN', 'NEW', '_UID', 'FAMS', 'FAMC', 'CHIL',
+                        'NAME', 'CREA', '_FID', 'OBJE', 'HUSB', 'WIFE', 'SEX', 'NOTE', 'SOUR',)))
             {
                 $time = new DateTime();
                 $events[] = array(
@@ -601,7 +585,7 @@ class ParseController extends BaseController
                     'datestring' => $date ? $date['string'] : NULL,
                     'place' => $place,
                     'lati' => $latitude,
-                    'long' => $longitude,                    
+                    'long' => $longitude,
                     'gedcom' => $fact->getGedcom(),
                     'created_at' => $time,
                     'updated_at' => $time,
@@ -629,41 +613,41 @@ class ParseController extends BaseController
         $date = $fact->getDate();
 
         //webtrees date processing 
-        if (get_class($date->date1) != 'NumericGregorianDate') 
+        if (get_class($date->date1) != 'NumericGregorianDate')
         {
-            if($date->isOk())
-            {    
-            $result['date'] = implode('-', array($date->date1->y, $date->date1->m, $date->date1->d));
-            $result['string'] = $fact->getAttribute('DATE');
-            $result['estimate'] = $date->estimate;
-            return $result;
-            }
-        }
-        //additional date processing to deal with purely numeric dates, e.g. 12-03-1786
-        if (get_class($date->date1) == 'NumericGregorianDate')
+            if ($date->isOk())
             {
-                if(checkdate($date->date1->m, $date->date1->d, $date->date1->y))
-                {
                 $result['date'] = implode('-', array($date->date1->y, $date->date1->m, $date->date1->d));
                 $result['string'] = $fact->getAttribute('DATE');
                 $result['estimate'] = $date->estimate;
                 return $result;
-                }
-                else
-                {
-                    $error = new GedcomError();
-                    $error->gedcom_id = $gedcom_id;
-                    $error->indi_id = $indi_id;
-                    $error->fami_id = $fami_id;
-                    $error->stage = 'parsing';
-                    $error->classification = 'incorrect';
-                    $error->severity = 'error';
-                    $error->message = sprintf('Impossible or US formatted date ' . implode('-', array($date->date1->y, $date->date1->m, $date->date1->d)) .'');
-                    $error->save();  
-                }
             }
-    }       
-        
+        }
+        //additional date processing to deal with purely numeric dates, e.g. 12-03-1786
+        if (get_class($date->date1) == 'NumericGregorianDate')
+        {
+            if (checkdate($date->date1->m, $date->date1->d, $date->date1->y))
+            {
+                $result['date'] = implode('-', array($date->date1->y, $date->date1->m, $date->date1->d));
+                $result['string'] = $fact->getAttribute('DATE');
+                $result['estimate'] = $date->estimate;
+                return $result;
+            }
+            else
+            {
+                $error = new GedcomError();
+                $error->gedcom_id = $gedcom_id;
+                $error->indi_id = $indi_id;
+                $error->fami_id = $fami_id;
+                $error->stage = 'parsing';
+                $error->classification = 'incorrect';
+                $error->severity = 'error';
+                $error->message = sprintf('Impossible or US formatted date ' . implode('-', array($date->date1->y, $date->date1->m, $date->date1->d)) . '');
+                $error->save();
+            }
+        }
+    }
+
     /**
      * Retrieve the place from a fact
      * @param WT_Fact $fact
@@ -693,7 +677,7 @@ class ParseController extends BaseController
         }
         return $result;
     }
-    
+
     /**
      * Retrieve the longitude from a fact
      * @param WT_Long $fact
@@ -708,7 +692,7 @@ class ParseController extends BaseController
         }
         return $result;
     }
-        
+
     /**
      * Checks whether the given husband/wife is actually male/female. 
      * If not, a GedcomError will be created.

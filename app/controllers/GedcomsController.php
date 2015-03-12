@@ -248,7 +248,7 @@ class GedcomsController extends BaseController
             //delete database entries
             $gedcom->delete();
 
-            $user_dir = storage_path() . '/uploads/' . Auth::id() . '/';
+            $user_dir = Config::get('app.upload_dir') . '/' . Auth::id() . '/';
             $files_dir = bin2hex($gedcom->file_name);
 
             chdir($user_dir);

@@ -55,9 +55,13 @@ class TestCase extends Illuminate\Foundation\Testing\TestCase
         parent::tearDown();
         //Artisan::call('migrate:reset');
     }
-    
+
     public function uploadFile($filename)
     {
+        // Clean the upload directory
+        $user_dir = Config::get('app.upload_dir') . '/' . Auth::id() . '/';
+        $this->removeDir($user_dir);
+
         // Copy the file and create an UploadedFile
         $filename = DIRECTORY_SEPARATOR . 'files' . DIRECTORY_SEPARATOR . $filename;
         copy(__DIR__ . $filename, __DIR__ . 'copy.ged');
@@ -66,7 +70,7 @@ class TestCase extends Illuminate\Foundation\Testing\TestCase
         // Call the controller
         $this->call('POST', 'fileuploads/upload', array('tree_name' => 'test_tree'), array('uploads' => array($file)));
     }
-    
+
     public function parseFile($filename)
     {
         // Check whether the import has succeeded 
@@ -74,13 +78,37 @@ class TestCase extends Illuminate\Foundation\Testing\TestCase
 
         // Parse the file
         $this->action('GET', 'ParseController@getParse', array('id' => $gedcom->id));
-        
+
         return $gedcom->find($gedcom->id);
     }
-    
+
     public function uploadAndParseFile($filename)
     {
         $this->uploadFile($filename);
         return $this->parseFile($filename);
     }
+
+    /**
+     * Removes a directory and its contents, recursively.
+     * @param string $directory
+     */
+    private function removeDir($directory)
+    {
+        if (file_exists($directory))
+        {
+            foreach (glob("{$directory}/*") as $file)
+            {
+                if (is_dir($file))
+                {
+                    $this->removeDir($file);
+                }
+                else
+                {
+                    unlink($file);
+                }
+            }
+            rmdir($directory);
+        }
+    }
+
 }

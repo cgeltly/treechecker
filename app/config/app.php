@@ -196,5 +196,7 @@ return array(
                 'Debugbar'        => 'Barryvdh\Debugbar\Facade', // Debugbar
 
 	),
+    
+        'upload_dir' => storage_path() . '/uploads',
 
 );
