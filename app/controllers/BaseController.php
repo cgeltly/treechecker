@@ -1,6 +1,6 @@
 <?php
 
-/* 
+/*
  * TreeChecker: Error recognition for genealogical trees
  * 
  * Copyright (C) 2014 Digital Humanities Lab, Faculty of Humanities, Universiteit Utrecht
@@ -23,6 +23,7 @@
 
 class BaseController extends Controller
 {
+
     /**
      * Initializer.
      *
@@ -47,13 +48,12 @@ class BaseController extends Controller
         }
     }
 
-        
     /**
-    * Allow access only where the data belongs to the user, or user is admin 
-    * @param int $user_id
-    * @return true|false 
-    */
-    protected function allowedAccess($user_id) 
+     * Allow access only where the data belongs to the user, or user is admin 
+     * @param int $user_id
+     * @return true|false 
+     */
+    protected function allowedAccess($user_id)
     {
 
         if (($user_id == Auth::user()->id) || (Auth::user()->role == 'admin'))
@@ -65,4 +65,5 @@ class BaseController extends Controller
             return false;
         }
     }
+
 }

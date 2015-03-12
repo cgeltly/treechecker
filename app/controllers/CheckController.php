@@ -27,11 +27,11 @@ class CheckController extends BaseController
     public function __construct()
     {
         parent::__construct();
-        
+
         //prevent access to controller methods without login
         $this->beforeFilter('auth');
     }
-    
+
     /**
      * Checks a Gedcom for errors. 
      * @param int $gedcom_id

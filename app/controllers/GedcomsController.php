@@ -29,12 +29,11 @@ class GedcomsController extends BaseController
     public function __construct()
     {
         parent::__construct();
-        
+
         //prevent access to controller methods without login
         $this->beforeFilter('auth');
     }
-    
-    
+
     /**
      * Show a list of all the gedcoms.
      */
@@ -51,20 +50,20 @@ class GedcomsController extends BaseController
     {
         Session::forget('progress');
         $this->layout->content = View::make('gedcom/gedcoms/unparsed');
-    }    
-    
+    }
+
     /**
      * Shows a single GEDCOM file, with some statistics. 
      * @param int $id the Gedcom ID
      */
     public function getShow($id)
     {
-    
+
         $gedcom = Gedcom::findOrFail($id);
-                
-        if ($this->allowedAccess($gedcom->user_id)) 
+
+        if ($this->allowedAccess($gedcom->user_id))
         {
-        
+
             if (!$gedcom->parsed)
             {
                 // TODO: this is a bit too much of course
@@ -125,7 +124,7 @@ class GedcomsController extends BaseController
 
             $this->layout->content = View::make('gedcom/gedcoms/detail', compact('gedcom', 'statistics'));
         }
-        else 
+        else
         {
             return Response::make('Unauthorized', 401);
         }
@@ -147,16 +146,15 @@ class GedcomsController extends BaseController
     public function getEdit($id)
     {
         $gedcom = Gedcom::findOrFail($id);
-                
-        if ($this->allowedAccess($gedcom->user_id)) 
+
+        if ($this->allowedAccess($gedcom->user_id))
         {
             $this->layout->content = View::make('gedcom/gedcoms/edit')->with('gedcom', $gedcom);
         }
-        else 
+        else
         {
             return Response::make('Unauthorized', 401);
         }
-        
     }
 
     /**
@@ -167,9 +165,9 @@ class GedcomsController extends BaseController
     public function postUpdate($id)
     {
         $gedcom = Gedcom::findOrFail($id);
-                
-        if ($this->allowedAccess($gedcom->user_id)) 
-        {      
+
+        if ($this->allowedAccess($gedcom->user_id))
+        {
             $validator = Validator::make(Input::all(), Gedcom::$update_rules);
 
             if ($validator->passes())
@@ -186,7 +184,7 @@ class GedcomsController extends BaseController
                 return Redirect::to('gedcoms/edit/' . $id)->withErrors($validator)->withInput();
             }
         }
-        else 
+        else
         {
             return Response::make('Unauthorized', 401);
         }
@@ -198,16 +196,16 @@ class GedcomsController extends BaseController
     public function getIndividuals($id)
     {
         $gedcom = Gedcom::findOrFail($id);
-                
-        if ($this->allowedAccess($gedcom->user_id)) 
+
+        if ($this->allowedAccess($gedcom->user_id))
         {
             $source = 'gedcoms/indidata/' . $id;
             $title = $gedcom->tree_name;
             $subtitle = Lang::get('gedcom/individuals/subtitle.result_one_tree');
-            $count = $gedcom->individuals()->count();  
+            $count = $gedcom->individuals()->count();
             $this->layout->content = View::make('gedcom/individuals/index', compact('source', 'title', 'subtitle', 'count'));
         }
-        else 
+        else
         {
             return Response::make('Unauthorized', 401);
         }
@@ -219,16 +217,16 @@ class GedcomsController extends BaseController
     public function getFamilies($id)
     {
         $gedcom = Gedcom::findOrFail($id);
-                
-        if ($this->allowedAccess($gedcom->user_id)) 
+
+        if ($this->allowedAccess($gedcom->user_id))
         {
             $source = 'families/data/' . $id;
             $title = $gedcom->tree_name;
             $subtitle = Lang::get('gedcom/families/subtitle.result_one_tree');
-            $count = $gedcom->families()->count();      
+            $count = $gedcom->families()->count();
             $this->layout->content = View::make('gedcom/families/index', compact('source', 'title', 'subtitle', 'count'));
-        }    
-        else 
+        }
+        else
         {
             return Response::make('Unauthorized', 401);
         }
@@ -242,8 +240,8 @@ class GedcomsController extends BaseController
     public function getDelete($id)
     {
         $gedcom = Gedcom::findOrFail($id);
-                
-        if ($this->allowedAccess($gedcom->user_id)) 
+
+        if ($this->allowedAccess($gedcom->user_id))
         {
             //delete database entries
             $gedcom->delete();
@@ -256,7 +254,7 @@ class GedcomsController extends BaseController
 
             return Redirect::to('gedcoms/index')->with('message', 'Gedcom successfully deleted');
         }
-        else 
+        else
         {
             return Response::make('Unauthorized', 401);
         }
@@ -334,7 +332,7 @@ class GedcomsController extends BaseController
     public function getUnparseddata()
     {
         $user = Auth::user();
-        
+
         $gedcoms = Gedcom::select(array('file_name', 'tree_name', 'source', 'notes', 'parsed', 'id'));
         $gedcoms->where('parsed', 0);
         if ($user->role != 'admin')
@@ -349,8 +347,8 @@ class GedcomsController extends BaseController
                         ->remove_column('parsed')
                         ->remove_column('id')
                         ->make();
-    }    
-    
+    }
+
     /**
      * Show a list of all the GedcomIndividuals formatted for Datatables.
      * @return Datatables JSON
@@ -358,19 +356,19 @@ class GedcomsController extends BaseController
     public function getIndidata($id)
     {
         $user = Auth::user();
-        
+
         $individuals = GedcomIndividual::leftJoin('gedcoms', 'gedcoms.id', '=', 'individuals.gedcom_id')
-            ->select(array('individuals.gedcom_key', 'individuals.first_name', 'individuals.last_name', 'individuals.sex', 'individuals.id'));
+                ->select(array('individuals.gedcom_key', 'individuals.first_name', 'individuals.last_name', 'individuals.sex', 'individuals.id'));
         $individuals->where('gedcom_id', $id);
         if ($user->role != 'admin')
         {
             $individuals->where('gedcoms.user_id', $user->id);
         }
-        
+
         return Datatables::of($individuals)
-                ->edit_column('gedcom_key', '{{ HTML::link("individuals/show/" . $id, $gedcom_key) }}')
-                ->remove_column('id')
-                ->make();
+                        ->edit_column('gedcom_key', '{{ HTML::link("individuals/show/" . $id, $gedcom_key) }}')
+                        ->remove_column('id')
+                        ->make();
     }
 
     /**
@@ -380,21 +378,21 @@ class GedcomsController extends BaseController
     public function getFamidata($id)
     {
         $user = Auth::user();
-        
+
         $families = GedcomFamily::leftJoin('gedcoms', 'gedcoms.id', '=', 'families.gedcom_id')
-            ->select(array('families.gedcom_key', 'families.indi_id_husb', 'families.indi_id_wife', 'families.id'));
+                ->select(array('families.gedcom_key', 'families.indi_id_husb', 'families.indi_id_wife', 'families.id'));
         $families->where('gedcom_id', $id);
         if ($user->role != 'admin')
         {
             $families->where('gedcoms.user_id', $user->id);
         }
-        
+
         return Datatables::of($families)
-                ->edit_column('gedcom_key', '{{ HTML::link("families/show/" . $id, $gedcom_key) }}')
-                ->edit_column('indi_id_husb', '{{ $indi_id_husb ? HTML::link("individuals/show/" . $indi_id_husb, $indi_id_husb) : "" }}')
-                ->edit_column('indi_id_wife', '{{ $indi_id_wife ? HTML::link("individuals/show/" . $indi_id_wife, $indi_id_wife) : "" }}')
-                ->remove_column('id')
-                ->make();
+                        ->edit_column('gedcom_key', '{{ HTML::link("families/show/" . $id, $gedcom_key) }}')
+                        ->edit_column('indi_id_husb', '{{ $indi_id_husb ? HTML::link("individuals/show/" . $indi_id_husb, $indi_id_husb) : "" }}')
+                        ->edit_column('indi_id_wife', '{{ $indi_id_wife ? HTML::link("individuals/show/" . $indi_id_wife, $indi_id_wife) : "" }}')
+                        ->remove_column('id')
+                        ->make();
     }
 
     /**
@@ -463,5 +461,5 @@ class GedcomsController extends BaseController
         }
         rmdir($directory);
     }
-    
+
 }
