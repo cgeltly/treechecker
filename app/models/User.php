@@ -65,4 +65,22 @@ class User extends Eloquent implements UserInterface, RemindableInterface
         return $this->hasMany('Gedcom', 'user_id');
     }
 
+    /**
+     * Returns the GedcomIndividuals belonging to this User through the Gedcoms.
+     * @return Illuminate\Database\Eloquent\Collection
+     */
+    public function individuals()
+    {
+        return $this->hasManyThrough('GedcomIndividual', 'Gedcom', 'user_id', 'gedcom_id');
+    }
+
+    /**
+     * Returns the GedcomFamilies belonging to this User through the Gedcoms.
+     * @return Illuminate\Database\Eloquent\Collection
+     */
+    public function families()
+    {
+        return $this->hasManyThrough('GedcomFamily', 'Gedcom', 'user_id', 'gedcom_id');
+    }
+
 }
