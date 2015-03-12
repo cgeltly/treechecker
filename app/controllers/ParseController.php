@@ -202,6 +202,9 @@ class ParseController extends BaseController
             case 'FAM':
                 $this->processFamily($xref, $gedrec, $gedcom_id);
                 break;
+            case 'NOTE':
+                $this->processNote($xref, $gedrec, $gedcom_id);
+                break;
             case '_PLAC':
                 $this->processGeocode($gedrec, $gedcom_id);
                 break;
@@ -285,6 +288,24 @@ class ParseController extends BaseController
         $this->processChildren($record, $gedcom_id, $family);
         $this->processEvents($record, $gedcom_id, NULL, $family->id);
     }
+    
+    /**
+     * Creates a GedcomNote. 
+     * @param string $xref
+     * @param string $gedrec
+     * @param int $gedcom_id
+     */
+    private function processNote($xref, $gedrec, $gedcom_id)
+    {
+        $record = new WT_Note($xref, $gedrec, null, $gedcom_id);
+        
+        // Create the GedcomNote
+        $note = new GedcomNote();
+        $note->gedcom_id = $gedcom_id;
+        $note->note = $record->getNote();
+        $note->gedcom = $gedrec;
+        $note->save();
+    }
 
     /**
      * Create Geocode (place definition) record 
@@ -293,8 +314,7 @@ class ParseController extends BaseController
      */
     private function processGeocode($gedrec, $gedcom_id)
     {
-
-        //deafult null values for attributes
+        //default null values for attributes
         $place = null;
         $latitude = 99.9999999;
         $longitude = 999.9999999;
