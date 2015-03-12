@@ -55,15 +55,7 @@ class BaseController extends Controller
      */
     protected function allowedAccess($user_id)
     {
-
-        if (($user_id == Auth::user()->id) || (Auth::user()->role == 'admin'))
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+        return $user_id == Auth::user()->id || Auth::user()->role == 'admin';
     }
 
 }
