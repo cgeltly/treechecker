@@ -1,6 +1,6 @@
 <?php
 
-/* 
+/*
  * TreeChecker: Error recognition for genealogical trees
  * 
  * Copyright (C) 2014 Digital Humanities Lab, Faculty of Humanities, Universiteit Utrecht
