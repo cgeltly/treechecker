@@ -55,6 +55,7 @@ class ParseController extends BaseController
             $gedcom->geocodes()->delete();
             $gedcom->errors()->delete();
             $gedcom->notes()->delete();
+            
             Session::put('progress', 2);
             Session::save();
 
@@ -302,6 +303,8 @@ class ParseController extends BaseController
     {
         $record = new WT_Note($xref, $gedrec, null, $gedcom_id);
 
+        // Find the Note in the noteMap 
+        // TODO: what if we can't find it there?! 
         $ref = $this->noteMap[$xref];
 
         // Create the GedcomNote
