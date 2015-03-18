@@ -272,6 +272,48 @@ class Gedcom extends Eloquent
     }
 
     /*
+     * Marriage ages
+     */
+
+    public function marriageAge()
+    {
+        return DB::table('individuals as i')
+                        ->join('families as f', function($join)
+                        {
+                            $join->on('f.indi_id_husb', '=', 'i.id')->orOn('f.indi_id_wife', '=', 'i.id');
+                        })
+                        ->join('events as e1', 'e1.indi_id', '=', 'i.id')
+                        ->join('events as e2', 'e2.fami_id', '=', 'f.id')
+                        ->where('e1.event', 'BIRT')
+                        ->where('e2.event', 'MARR')
+                        ->whereNotNull('e1.date')
+                        ->whereNotNull('e2.date')
+                        ->where('i.gedcom_id', $this->id);
+    }
+
+    public function marriageAges()
+    {
+        return $this->marriageAge()
+                        ->select('i.id', 'i.sex', 'e1.date as birth_date', $this->sqlAge('marriage_age'))
+                        ->get();
+    }
+
+    public function avgMarriageAge()
+    {
+        return $this->marriageAge()->avg($this->sqlAge());
+    }
+
+    public function maxMarriageAge()
+    {
+        return $this->marriageAge()->max($this->sqlAge());
+    }
+
+    public function minMarriageAge()
+    {
+        return $this->marriageAge()->min($this->sqlAge());
+    }
+
+    /*
      * Helpers
      */
 
