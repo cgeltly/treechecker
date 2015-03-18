@@ -1,35 +1,34 @@
 <style>
-
-    body {
-        font: 10px sans-serif;
-    }
-
     .axis path,
     .axis line {
         fill: none;
         stroke: #000;
         shape-rendering: crispEdges;
     }
-
-    .dot {
-        stroke: #000;
-    }
-
 </style>
+<div class="page-header">
+    <h3>
+        Marriage ages
+    </h3>
+</div>
+<div id="chart">
+    <!-- Chart will be rendered here -->
+</div>
 <script>
+    // Modified from http://bl.ocks.org/mbostock/3887118
 
-    var margin = {top: 20, right: 20, bottom: 30, left: 40},
-    width = 960 - margin.left - margin.right,
-            height = 500 - margin.top - margin.bottom;
+    // Set margins
+    var margin = {top: 20, right: 20, bottom: 30, left: 40};
+    var width = 960 - margin.left - margin.right;
+    var height = 500 - margin.top - margin.bottom;
 
-    var x = d3.scale.linear()
-            .range([0, width]);
-
-    var y = d3.scale.linear()
-            .range([height, 0]);
+    // Set scales
+    var x = d3.time.scale().range([0, width]);
+    var y = d3.scale.linear().range([height, 0]);
 
     var color = d3.scale.category10();
 
+    // Set axes
     var xAxis = d3.svg.axis()
             .scale(x)
             .orient("bottom");
@@ -38,25 +37,24 @@
             .scale(y)
             .orient("left");
 
-    var svg = d3.select("body").append("svg")
+    // Create chart svg
+    var svg = d3.select("#chart").append("svg")
             .attr("width", width + margin.left + margin.right)
             .attr("height", height + margin.top + margin.bottom)
             .append("g")
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-    d3.tsv("data.tsv", function (error, data) {
-        data.forEach(function (d) {
-            d.sepalLength = +d.sepalLength;
-            d.sepalWidth = +d.sepalWidth;
-        });
-
+    // Load data
+    d3.json("{{ URL::to('families/marriageages/' . $gedcom->id) }}", function (error, data) {
+        // Alter domains
         x.domain(d3.extent(data, function (d) {
-            return d.sepalWidth;
+            return toDate(d.birth_date);
         })).nice();
         y.domain(d3.extent(data, function (d) {
-            return d.sepalLength;
+            return d.marriage_age;
         })).nice();
 
+        // Set axes
         svg.append("g")
                 .attr("class", "x axis")
                 .attr("transform", "translate(0," + height + ")")
@@ -66,7 +64,7 @@
                 .attr("x", width)
                 .attr("y", -6)
                 .style("text-anchor", "end")
-                .text("Sepal Width (cm)");
+                .text("Birth date");
 
         svg.append("g")
                 .attr("class", "y axis")
@@ -77,23 +75,30 @@
                 .attr("y", 6)
                 .attr("dy", ".71em")
                 .style("text-anchor", "end")
-                .text("Sepal Length (cm)")
+                .text("Marriage age")
 
+        // Add points
         svg.selectAll(".dot")
                 .data(data)
-                .enter().append("circle")
+                .enter()
+                .append("a")
+                .attr("xlink:href", function (d) {
+                    return "{{ URL::to('individuals/show/') }}" + "/" + d.id;
+                })
+                .append("circle")
                 .attr("class", "dot")
                 .attr("r", 3.5)
                 .attr("cx", function (d) {
-                    return x(d.sepalWidth);
+                    return x(toDate(d.birth_date));
                 })
                 .attr("cy", function (d) {
-                    return y(d.sepalLength);
+                    return y(d.marriage_age);
                 })
                 .style("fill", function (d) {
-                    return color(d.species);
+                    return color(d.sex);
                 });
 
+        // Add legend
         var legend = svg.selectAll(".legend")
                 .data(color.domain())
                 .enter().append("g")
@@ -116,6 +121,18 @@
                 .text(function (d) {
                     return d;
                 });
-
     });
+
+    // Create a date from a string. For incomplete dates, use only the year. 
+    function toDate(d) {
+        if (endsWith(d, '-00')) {
+            d = d.substring(0, 4);
+        }
+        return new Date(d);
+    }
+
+    // Checks whether a given string ends with a given suffix.
+    function endsWith(str, suffix) {
+        return str.indexOf(suffix, str.length - suffix.length) !== -1;
+    }
 </script>

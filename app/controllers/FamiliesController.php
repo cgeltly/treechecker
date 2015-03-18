@@ -29,11 +29,11 @@ class FamiliesController extends BaseController
     public function __construct()
     {
         parent::__construct();
-        
+
         //prevent access to controller methods without login
         $this->beforeFilter('auth');
-    }    
-    
+    }
+
     /**
      * Show a list of all the GedcomFamilies.
      */
@@ -53,14 +53,14 @@ class FamiliesController extends BaseController
     public function getShow($id)
     {
         $family = GedcomFamily::findOrFail($id);
-                
-        if ($this->allowedAccess($family->gc->user_id)) 
+
+        if ($this->allowedAccess($family->gc->user_id))
         {
             $husband = $family->husband;
             $wife = $family->wife;
             $this->layout->content = View::make('gedcom/families/detail', compact('family', 'husband', 'wife'));
         }
-        else 
+        else
         {
             return Response::make('Unauthorized', 401);
         }
@@ -73,23 +73,23 @@ class FamiliesController extends BaseController
     public function getData()
     {
         $user = Auth::user();
-        
+
         $families = GedcomFamily::leftJoin('gedcoms AS g', 'families.gedcom_id', '=', 'g.id')
                 ->leftJoin('individuals AS h', 'families.indi_id_husb', '=', 'h.id')
                 ->leftJoin('individuals AS w', 'families.indi_id_wife', '=', 'w.id')
                 ->select(array('g.file_name',
-                'families.gedcom_id', 'families.gedcom_key', 'families.id',
-                'families.indi_id_husb', 'families.indi_id_wife',
-                'h.gedcom_key AS hgk', DB::raw('CONCAT(h.first_name, " ", h.last_name) AS husb_name'), 
-                'w.gedcom_key AS wgk', DB::raw('CONCAT(w.first_name, " ", w.last_name) AS wife_name')));
-                
-                $families->take(100);
-        
-                if ($user->role != 'admin')
-                {
-                    $families->where('g.user_id', $user->id);
-                }
-                
+            'families.gedcom_id', 'families.gedcom_key', 'families.id',
+            'families.indi_id_husb', 'families.indi_id_wife',
+            'h.gedcom_key AS hgk', DB::raw('CONCAT(h.first_name, " ", h.last_name) AS husb_name'),
+            'w.gedcom_key AS wgk', DB::raw('CONCAT(w.first_name, " ", w.last_name) AS wife_name')));
+
+        $families->take(100);
+
+        if ($user->role != 'admin')
+        {
+            $families->where('g.user_id', $user->id);
+        }
+
         return Datatables::of($families)
                         ->edit_column('file_name', '{{ HTML::link("gedcoms/show/" . $gedcom_id, $file_name) }}')
                         ->edit_column('gedcom_key', '{{ HTML::link("families/show/" . $id, $gedcom_key) }}')
@@ -109,18 +109,30 @@ class FamiliesController extends BaseController
     public function getEvents($id)
     {
         $user = Auth::user();
-        
-        $events = GedcomEvent::leftJoin('gedcoms', 'events.gedcom_id', '=', 'gedcoms.id')                
+
+        $events = GedcomEvent::leftJoin('gedcoms', 'events.gedcom_id', '=', 'gedcoms.id')
                 ->select(array('events.event', 'events.date', 'events.place'))
                 ->where('fami_id', $id);
-        
-                if ($user->role != 'admin')
-                {
-                    $events->where('gedcoms.user_id', $user->id);
-                }
-        
-        
+
+        if ($user->role != 'admin')
+        {
+            $events->where('gedcoms.user_id', $user->id);
+        }
+
+
         return Datatables::of($events)->make();
+    }
+
+    public function getMarriages($id)
+    {
+        $gedcom = Gedcom::findOrFail($id);
+        $this->layout->content = View::make('gedcom/families/marriages', compact('gedcom'));
+    }
+
+    public function getMarriageages($id)
+    {
+        $gedcom = Gedcom::findOrFail($id);
+        return Response::json($gedcom->marriageAges());
     }
 
     /**
@@ -131,21 +143,21 @@ class FamiliesController extends BaseController
     public function getCount()
     {
         $user = Auth::user();
-        
+
         $families = User::leftJoin('gedcoms', 'users.id', '=', 'gedcoms.user_id')
                 ->leftJoin('families', 'gedcoms.id', '=', 'families.gedcom_id');
-        
-                //admin can see all files, other users see their own only
-                if ($user->role != 'admin')
-                {
-                    $families->where('users.id', $user->id);
-                }
-                else
-                {
-                    $families->where('users.id', 'LIKE', '%');
-                }    
-        
+
+        //admin can see all files, other users see their own only
+        if ($user->role != 'admin')
+        {
+            $families->where('users.id', $user->id);
+        }
+        else
+        {
+            $families->where('users.id', 'LIKE', '%');
+        }
+
         return $families->count();
     }
-    
+
 }
