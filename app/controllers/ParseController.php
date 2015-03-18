@@ -24,6 +24,8 @@
 class ParseController extends BaseController
 {
 
+    private $noteMap = array();
+
     public function __construct()
     {
         parent::__construct();
@@ -52,6 +54,7 @@ class ParseController extends BaseController
             $gedcom->families()->delete();
             $gedcom->geocodes()->delete();
             $gedcom->errors()->delete();
+            $gedcom->notes()->delete();
             Session::put('progress', 2);
             Session::save();
 
@@ -288,7 +291,7 @@ class ParseController extends BaseController
         $this->processChildren($record, $gedcom_id, $family);
         $this->processEvents($record, $gedcom_id, NULL, $family->id);
     }
-    
+
     /**
      * Creates a GedcomNote. 
      * @param string $xref
@@ -298,10 +301,20 @@ class ParseController extends BaseController
     private function processNote($xref, $gedrec, $gedcom_id)
     {
         $record = new WT_Note($xref, $gedrec, null, $gedcom_id);
-        
+
+        $ref = $this->noteMap[$xref];
+
         // Create the GedcomNote
         $note = new GedcomNote();
         $note->gedcom_id = $gedcom_id;
+        if (Str::startsWith($ref, 'I'))
+        {
+            $note->indi_id = substr($ref, 1);
+        }
+        else if (Str::startsWith($ref, 'F'))
+        {
+            $note->fami_id = substr($ref, 1);
+        }
         $note->note = $record->getNote();
         $note->gedcom = $gedrec;
         $note->save();
@@ -610,6 +623,12 @@ class ParseController extends BaseController
                     'created_at' => $time,
                     'updated_at' => $time,
                 );
+            }
+            else if ($fact->getTag() == 'NOTE')
+            {
+                $key = trim($fact->getValue(), '@');
+                $value = $indi_id ? ('I' . $indi_id) : ('F' . $fami_id);
+                $this->noteMap[$key] = $value;
             }
         }
 

@@ -92,6 +92,15 @@ class Gedcom extends Eloquent
     }
 
     /**
+     * Returns the GedcomNotes belonging to this Gedcom.
+     * @return Illuminate\Database\Eloquent\Collection
+     */
+    public function notes()
+    {
+        return $this->hasMany('GedcomNote', 'gedcom_id');
+    }
+
+    /**
      * Returns the GedcomChildren belonging to this Gedcom through the GedcomFamilies.
      * @return Illuminate\Database\Eloquent\Collection
      */
