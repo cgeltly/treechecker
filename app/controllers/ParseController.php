@@ -304,23 +304,40 @@ class ParseController extends BaseController
         $record = new WT_Note($xref, $gedrec, null, $gedcom_id);
 
         // Find the Note in the noteMap 
-        // TODO: what if we can't find it there?! 
-        $ref = $this->noteMap[$xref];
+        if (array_key_exists($xref, $this->noteMap)) 
+        {
+            $ref = $this->noteMap[$xref];
 
-        // Create the GedcomNote
-        $note = new GedcomNote();
-        $note->gedcom_id = $gedcom_id;
-        if (Str::startsWith($ref, 'I'))
-        {
-            $note->indi_id = substr($ref, 1);
+            // Create the GedcomNote
+            $note = new GedcomNote();
+            $note->gedcom_id = $gedcom_id;
+            if (Str::startsWith($ref, 'I'))
+            {
+                $note->indi_id = substr($ref, 1);
+            }
+            else if (Str::startsWith($ref, 'F'))
+            {
+                $note->fami_id = substr($ref, 1);
+            }
+            $note->note = $record->getNote();
+            $note->gedcom = $gedrec;
+            $note->save();
+
+            // Remove the key from the noteMap
+            unset($this->noteMap[$xref]);
         }
-        else if (Str::startsWith($ref, 'F'))
+        // If the note doesn't exist, add a parse error
+        else
         {
-            $note->fami_id = substr($ref, 1);
+            // If there's no match, add a parsing error and return
+            $error = new GedcomError();
+            $error->gedcom_id = $gedcom_id;
+            $error->stage = 'parsing';
+            $error->classification = 'missing';
+            $error->severity = 'fatal';
+            $error->message = sprintf('No NOTE reference found for %s', $xref);
+            $error->save();
         }
-        $note->note = $record->getNote();
-        $note->gedcom = $gedrec;
-        $note->save();
     }
 
     /**
