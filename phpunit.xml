@@ -18,6 +18,7 @@
 <!--
     <filter>
         <whitelist>
+            <directory suffix=".php">./app/controllers/</directory>
             <directory suffix=".php">./app/models/</directory>
         </whitelist>
     </filter>
