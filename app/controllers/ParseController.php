@@ -55,7 +55,7 @@ class ParseController extends BaseController
             $gedcom->geocodes()->delete();
             $gedcom->errors()->delete();
             $gedcom->notes()->delete();
-            
+
             Session::put('progress', 2);
             Session::save();
 
@@ -80,7 +80,7 @@ class ParseController extends BaseController
                 Session::put('progress', min(floor(($i / $filecount) * 100), 99));
                 Session::save();
             }
-            
+
             // If we reached this point, and there are still notes in the noteMap, add parse errors
             foreach ($this->noteMap as $n => $r)
             {
@@ -148,10 +148,13 @@ class ParseController extends BaseController
         // Retrieve the contents of the file
         $gedcom = file_get_contents($file);
 
-        // Allow sixty seconds of execution time, start a transaction
+        // Allow 3 minutes of execution time
         set_time_limit(180);
-        // Query log is save in memory, so need to disable it for large file parsing
+
+        // Query log is save in memory, so we need to disable it for large file parsing
         DB::connection()->disableQueryLog();
+
+        // Start the transaction
         DB::beginTransaction();
 
         // Split records per 0 line and import
@@ -316,25 +319,12 @@ class ParseController extends BaseController
         $record = new WT_Note($xref, $gedrec, null, $gedcom_id);
 
         // Find the Note in the noteMap 
-        if (array_key_exists($xref, $this->noteMap)) 
+        if (array_key_exists($xref, $this->noteMap))
         {
             $ref = $this->noteMap[$xref];
 
             // Create the GedcomNote
-            $note = new GedcomNote();
-            $note->gedcom_id = $gedcom_id;
-            $note->gedcom_key = $xref;
-            if (Str::startsWith($ref, 'I'))
-            {
-                $note->indi_id = substr($ref, 1);
-            }
-            else if (Str::startsWith($ref, 'F'))
-            {
-                $note->fami_id = substr($ref, 1);
-            }
-            $note->note = $record->getNote();
-            $note->gedcom = $gedrec;
-            $note->save();
+            $this->createNote($xref, $gedrec, $gedcom_id, $ref, $record->getNote());
 
             // Remove the key from the noteMap
             unset($this->noteMap[$xref]);
@@ -350,6 +340,24 @@ class ParseController extends BaseController
             $error->message = sprintf('No NOTE reference found for %s', $xref);
             $error->save();
         }
+    }
+
+    private function createNote($xref, $gedrec, $gedcom_id, $ref, $note_text)
+    {
+        $note = new GedcomNote();
+        $note->gedcom_id = $gedcom_id;
+        $note->gedcom_key = $xref;
+        if (starts_with($ref, 'I'))
+        {
+            $note->indi_id = substr($ref, 1);
+        }
+        else if (starts_with($ref, 'F'))
+        {
+            $note->fami_id = substr($ref, 1);
+        }
+        $note->note = $note_text;
+        $note->gedcom = $gedrec;
+        $note->save();
     }
 
     /**
@@ -658,10 +666,23 @@ class ParseController extends BaseController
             }
             else if ($fact->getTag() == 'NOTE')
             {
-                $key = trim($fact->getValue(), '@');
-                $value = $indi_id ? ('I' . $indi_id) : ('F' . $fami_id);
-                $this->noteMap[$key] = $value;
+                // Create a reference for later lookup
+                $ref = $indi_id ? ('I' . $indi_id) : ('F' . $fami_id);
+                
+                // If there is a reference to a note; save that in the noteMap
+                if (starts_with($fact->getValue(), '@'))
+                {
+                    $key = trim($fact->getValue(), '@');
+                    $this->noteMap[$key] = $ref;
+                }
+                // If it's an embedded note, save it directly
+                else
+                {
+                    $this->createNote(NULL, $fact->getGedcom(), $gedcom_id, $ref, $fact->getValue());
+                }
             }
+            
+            // TODO: parse notes on an event
         }
 
         if ($events)
