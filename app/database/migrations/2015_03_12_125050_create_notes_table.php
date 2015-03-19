@@ -19,10 +19,11 @@ class CreateNotesTable extends Migration
 
             $table->increments('id');
             $table->unsignedInteger('gedcom_id');
+            $table->string('gedcom_key')->nullable();
+            $table->text('note');
             $table->unsignedInteger('fami_id')->nullable();
             $table->unsignedInteger('indi_id')->nullable();
             $table->unsignedInteger('even_id')->nullable();
-            $table->text('note');            
             $table->text('gedcom');
             $table->timestamps();
 

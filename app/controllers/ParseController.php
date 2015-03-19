@@ -80,6 +80,18 @@ class ParseController extends BaseController
                 Session::put('progress', min(floor(($i / $filecount) * 100), 99));
                 Session::save();
             }
+            
+            // If we reached this point, and there are still notes in the noteMap, add parse errors
+            foreach ($this->noteMap as $n => $r)
+            {
+                $error = new GedcomError();
+                $error->gedcom_id = $gedcom_id;
+                $error->stage = 'parsing';
+                $error->classification = 'missing';
+                $error->severity = 'error';
+                $error->message = sprintf('No definition found for NOTE %s on %s', $n, $r);
+                $error->save();
+            }
 
             // Set the file as parsed, but not checked for errors
             $gedcom->parsed = true;
@@ -311,6 +323,7 @@ class ParseController extends BaseController
             // Create the GedcomNote
             $note = new GedcomNote();
             $note->gedcom_id = $gedcom_id;
+            $note->gedcom_key = $xref;
             if (Str::startsWith($ref, 'I'))
             {
                 $note->indi_id = substr($ref, 1);
@@ -326,15 +339,14 @@ class ParseController extends BaseController
             // Remove the key from the noteMap
             unset($this->noteMap[$xref]);
         }
-        // If the note doesn't exist, add a parse error
+        // If the Note doesn't exist, add a parse error
         else
         {
-            // If there's no match, add a parsing error and return
             $error = new GedcomError();
             $error->gedcom_id = $gedcom_id;
             $error->stage = 'parsing';
             $error->classification = 'missing';
-            $error->severity = 'fatal';
+            $error->severity = 'error';
             $error->message = sprintf('No NOTE reference found for %s', $xref);
             $error->save();
         }

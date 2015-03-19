@@ -15,7 +15,7 @@ class NotesTest extends TestCase
     /**
      * Test the linking of notes to individuals
      */
-    public function testNotesIndividual()
+    public function testIndividual()
     {
         // This GEDCOM has 3 notes in total
         $this->assertEquals($this->gedcom->notes()->count(), 2);
@@ -30,7 +30,7 @@ class NotesTest extends TestCase
     /**
      * Test the linking of notes to families
      */
-    public function testNotesFamily()
+    public function testFamily()
     {
         // F1 has a note
         $fam = GedcomFamily::GedcomKey($this->gedcom->id, 'F1')->first();
@@ -40,12 +40,14 @@ class NotesTest extends TestCase
     /**
      * Test the creation of a parse error
      */
-    public function testNotesParseError()
+    public function testParseErrors()
     {
         // N4 is not linked to any individual, family or event
-        $this->assertEquals($this->gedcom->errors()->count(), 1);
-        $error = $this->gedcom->errors()->first();
-        $this->assertContains('N4', $error->message);
+        $this->assertEquals($this->gedcom->errors()->count(), 2);
+        
+        $error_messages = implode(' ', $this->gedcom->errors()->lists('message'));
+        $this->assertContains('N4', $error_messages);
+        $this->assertContains('N5', $error_messages);
     }
 
 }
