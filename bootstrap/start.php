@@ -26,7 +26,7 @@ $app = new Illuminate\Foundation\Application;
 
 $env = $app->detectEnvironment(array(
 
-	'local' => array('UU049028'),
+	'local' => array('UU049028', 'lab-demo'),
 
 ));
 

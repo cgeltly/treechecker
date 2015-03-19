@@ -49,6 +49,15 @@ class GedcomIndividual extends Eloquent
     }
 
     /**
+     * Returns the GedcomNotes belonging to this GedcomIndividual.
+     * @return Illuminate\Database\Eloquent\Collection
+     */
+    public function notes()
+    {
+        return $this->hasMany('GedcomNote', 'indi_id');
+    }
+
+    /**
      * Returns the birth event for this GedcomIndividual.
      * @return GedcomEvent
      */

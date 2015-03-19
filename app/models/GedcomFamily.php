@@ -83,12 +83,33 @@ class GedcomFamily extends Eloquent
     }
 
     /**
+     * Returns the GedcomNotes belonging to this GedcomFamily.
+     * @return Illuminate\Database\Eloquent\Collection
+     */
+    public function notes()
+    {
+        return $this->hasMany('GedcomNote', 'fami_id');
+    }
+
+    /**
      * Returns the children of this GedcomFamily.
      * @return Illuminate\Database\Eloquent\Collection
      */
     public function children()
     {
         return $this->belongsToMany('GedcomIndividual', 'children', 'fami_id', 'indi_id');
+    }
+
+    /**
+     * Finds all families for the given Gedcom ID and key.
+     * @param Illuminate\Database\Eloquent\Builder $query
+     * @param int $gedcom_id
+     * @param string $gedcom_key
+     * @return Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeGedcomKey($query, $gedcom_id, $gedcom_key)
+    {
+        return $query->where('gedcom_id', $gedcom_id)->where('gedcom_key', $gedcom_key);
     }
     
 }
