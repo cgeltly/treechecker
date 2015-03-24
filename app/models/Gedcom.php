@@ -227,7 +227,7 @@ class Gedcom extends Eloquent
     {
         return $this->lifespan()
                         ->select('i.id', 'i.gedcom_key', 'i.first_name as first_name', 'i.last_name as last_name',
-                                $this->sqlAge('age'))
+                                $this->dateDiff('age'))
                         ->having('age', '<', $lifespan)->get();
     }
 
@@ -354,6 +354,18 @@ class Gedcom extends Eloquent
                         . ($as ? ' AS ' . $as : ''));
     }
     
+     /**
+     * Use MySQL DATEDIFF to get difference between dates if both are complete, 
+     * otherwise do straight subtraction of one year from the other 
+     * @param string $as possible alias for this column
+     * @return string
+     */
+    private function dateDiff($as = NULL)
+    {
+        return DB::raw('IF(ISNULL(DATEDIFF(e2.date, e1.date)), YEAR(e2.date)-YEAR(e1.date), '
+                        . 'TRUNCATE(((DATEDIFF(e2.date, e1.date))/365.25), 0))'
+                        . ($as ? ' AS ' . $as : ''));
+    }   
     /**
      * Check two dates if either is estimated
      * @param string $as possible alias for this column
@@ -364,5 +376,7 @@ class Gedcom extends Eloquent
         return DB::raw('IF(e1.estimate + e2.estimate = 0, 0, 1)'
                         . ($as ? ' AS ' . $as : ''));
     }  
+    
+ 
     
 }

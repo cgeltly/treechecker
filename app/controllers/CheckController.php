@@ -175,8 +175,8 @@ class CheckController extends BaseController
             $error->type_specific = 'err: <0';
             $error->eval_broad = 'error';
             $error->eval_specific = '';
-            $error->message = sprintf('Death occurs ' . $i->age . ' years before birth for ' .
-                    $i->first_name . ' ' . $i->last_name . ' (' . $i->gedcom_key . ').');             
+            $error->message = sprintf('Death of ' . $i->first_name . ' ' . 
+                    $i->last_name . '(' . $i->gedcom_key . ') occurs before birth: ' . $i->age . ' years.');             
             $error->save();
         }
     }
