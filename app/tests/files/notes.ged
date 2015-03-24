@@ -28,7 +28,12 @@
 1 SEX M
 1 BIRT
 2 DATE 12 APR 1919
+2 NOTE @N3@
 1 FAMS @F1@
+1 NOTE This is a direct note on an individual
+2 CONC 
+2 CONT And here it continues
+2 CONT And continues again, ad infinitum
 0 @I3@ INDI
 1 NAME Elizabeth /Johnson/
 2 GIVN Elizabeth
@@ -50,7 +55,9 @@
 0 @N1@ NOTE
 1 CONC This is a test note on an individual.
 0 @N2@ NOTE
-1 CONC This is a test note on an family.
+1 CONC This is a test note on a family.
+0 @N3@ NOTE
+1 CONC This is a test note on an event.
 0 @N4@ NOTE
 1 CONC This note has no references anywhere and should lead to a parse error.
 0 TRLR
