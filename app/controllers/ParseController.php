@@ -87,8 +87,9 @@ class ParseController extends BaseController
                 $error = new GedcomError();
                 $error->gedcom_id = $gedcom_id;
                 $error->stage = 'parsing';
-                $error->classification = 'missing';
-                $error->severity = 'error';
+                $error->type_broad = 'missing';
+                $error->type_broad = 'note definition';                
+                $error->eval_broad = 'error';
                 $error->message = sprintf('No definition found for NOTE %s on %s', $n, $r);
                 $error->save();
             }
@@ -205,8 +206,9 @@ class ParseController extends BaseController
             $error = new GedcomError();
             $error->gedcom_id = $gedcom_id;
             $error->stage = 'parsing';
-            $error->classification = 'missing';
-            $error->severity = 'fatal';
+            $error->type_broad = 'standards';
+            $error->type_specific = 'non-standard tags';
+            $error->eval_broad = 'warning';
             $error->message = sprintf('Invalid GEDCOM format: %s', $gedrec);
             $error->save();
 
@@ -335,8 +337,9 @@ class ParseController extends BaseController
             $error = new GedcomError();
             $error->gedcom_id = $gedcom_id;
             $error->stage = 'parsing';
-            $error->classification = 'missing';
-            $error->severity = 'error';
+            $error->type_broad = 'missing';
+            $error->type_specific = 'note missing';            
+            $error->eval_broad = 'error';
             $error->message = sprintf('No NOTE reference found for %s', $xref);
             $error->save();
         }
@@ -564,8 +567,9 @@ class ParseController extends BaseController
                 $error->gedcom_id = $gedcom_id;
                 $error->fami_id = $family->id;
                 $error->stage = 'parsing';
-                $error->classification = 'missing';
-                $error->severity = 'error';
+                $error->type_broad = 'missing';
+                $error->type_specific = 'no @I ref. for child';            
+                $error->eval_broad = 'error';
                 $error->message = sprintf('No record for individual %s, but listed as a child in family %s.', $child, $family->gedcom_key);
                 $error->save();
             }
@@ -732,8 +736,9 @@ class ParseController extends BaseController
                 $error->indi_id = $indi_id;
                 $error->fami_id = $fami_id;
                 $error->stage = 'parsing';
-                $error->classification = 'incorrect';
-                $error->severity = 'error';
+                $error->type_broad = 'date format';
+                $error->type_specific = 'impossible or US format';            
+                $error->eval_broad = 'error';
                 $error->message = sprintf('Impossible or US formatted date ' . implode('-', array($date->date1->y, $date->date1->m, $date->date1->d)) . '');
                 $error->save();
             }
@@ -804,8 +809,9 @@ class ParseController extends BaseController
                 $error->indi_id = $ind->id;
                 $error->fami_id = $family_id;
                 $error->stage = 'parsing';
-                $error->classification = 'missing';
-                $error->severity = 'error';
+                $error->type_broad = 'gender';
+                $error->type_specific = 'parent of other sex';            
+                $error->eval_broad = 'error';                
                 $error->message = sprintf('Individual %s is listed as %s in family record, '
                         . 'but listed as %s in individual record.', $ind->gedcom_key, $gender === 'm' ? 'husband' : 'wife', $ind->sex === 'm' ? 'male' : 'female');
                 $error->save();

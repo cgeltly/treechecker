@@ -11,8 +11,8 @@
             <th>@lang('gedcom/gedcoms/table.file_name')</th>
             <th>@lang('gedcom/individuals/table.individual')</th>
             <th>@lang('gedcom/families/table.family')</th>
-            <th>@lang('gedcom/errors/table.classification')</th>
-            <th>@lang('gedcom/errors/table.severity')</th>
+            <th>@lang('gedcom/errors/table.type_broad')</th>
+            <th>@lang('gedcom/errors/table.eval_broad')</th>
             <th>@lang('gedcom/errors/table.message')</th>
         </tr>
     </thead>

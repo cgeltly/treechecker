@@ -88,7 +88,7 @@ class ErrorsController extends BaseController
                 ->select(array('gedcoms.file_name AS gedc',
             'individuals.gedcom_key AS indi',
             'families.gedcom_key AS fami',
-            'errors.classification', 'errors.severity', 'errors.message',
+            'errors.type_broad', 'errors.eval_broad', 'errors.message',
             'errors.gedcom_id', 'errors.indi_id', 'errors.fami_id'));
         if ($user->role != 'admin')
         {
