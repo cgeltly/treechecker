@@ -3,7 +3,7 @@
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class CreateParentalAgeTable extends Migration
+class CreateParentalAgesTable extends Migration
 {
 
     /**
@@ -13,7 +13,7 @@ class CreateParentalAgeTable extends Migration
      */
     public function up()
     {
-        Schema::create('parental_age', function(Blueprint $table)
+        Schema::create('parental_ages', function(Blueprint $table)
         {
             $table->engine = 'InnoDB';
             
@@ -22,7 +22,7 @@ class CreateParentalAgeTable extends Migration
             $table->unsignedInteger('fami_id')->nullable();
             $table->unsignedInteger('par_id')->nullable();
             $table->unsignedInteger('chil_id')->nullable();
-            $table->unsignedInteger('age')->nullable();
+            $table->unsignedInteger('par_age')->nullable();
             $table->enum('est_date', array('0', '1'));
             $table->enum('par_sex', array('m', 'f'));
             
@@ -43,7 +43,7 @@ class CreateParentalAgeTable extends Migration
      */
     public function down()
     {
-        Schema::drop('parental_age');
+        Schema::drop('parental_ages');
     }
 
 }

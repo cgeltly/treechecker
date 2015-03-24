@@ -16,7 +16,7 @@
 @if (!$errors->isEmpty())
 <ul class="list-group">
     @foreach ($errors as $e)
-    <li class="list-group-item list-group-item-{{{ $e->severity === 'error' ? 'danger' : 'warning' }}}">
+    <li class="list-group-item list-group-item-{{{ $e->eval_broad === 'error' ? 'danger' : 'warning' }}}">
         {{{ $e->message }}}
         @if ($e->indi_id)
         {{ HTML::link('individuals/show/' . $e->indi_id, 'View individual', array('class' => 'badge')) }}
@@ -42,7 +42,7 @@
 @if (!$parse_errors->isEmpty())
 <ul class="list-group">
     @foreach ($parse_errors as $e)
-    <li class="list-group-item list-group-item-{{{ $e->severity === 'error' ? 'danger' : 'warning' }}}">
+    <li class="list-group-item list-group-item-{{{ $e->eval_broad === 'error' ? 'danger' : 'warning' }}}">
         {{{ $e->message }}}
         @if ($e->indi_id)
         {{ HTML::link('individuals/show/' . $e->indi_id, 'View individual', array('class' => 'badge')) }}
@@ -55,6 +55,6 @@
 </ul>
 @else 
 <div class="alert alert-success" role="alert">
-    No errors during parsing. Great work!
+    No errors during parsing.
 </div>
 @endif

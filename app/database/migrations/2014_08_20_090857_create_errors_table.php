@@ -22,8 +22,10 @@ class CreateErrorsTable extends Migration
             $table->unsignedInteger('indi_id')->nullable();
             $table->unsignedInteger('fami_id')->nullable();
             $table->enum('stage', array('parsing', 'error_check'))->default('error_check');
-            $table->enum('classification', array('missing', 'superfluous', 'incorrect'));
-            $table->enum('severity', array('fatal', 'error', 'warning'));
+            $table->string('type_broad');
+            $table->string('type_specific');
+            $table->string('eval_broad');
+            $table->string('eval_specific');            
             $table->string('message');
             $table->timestamps();
             

@@ -70,7 +70,7 @@ class CheckController extends BaseController
         // Check marriage age difference of families
         $this->checkMarriageAgeDiff($gedcom);
 
-        // Check all event dates on correctness
+        // Check the chronology of event dates
         $this->checkEventDates($gedcom);
 
         // Check whether childs are listed in multiple families
@@ -116,9 +116,11 @@ class CheckController extends BaseController
             $error->gedcom_id = $gedcom->id;
             $error->indi_id = $e->indi_id;
             $error->fami_id = $e->fami_id;
-            $error->classification = 'incorrect';
-            $error->severity = 'warning';
-            $error->message = sprintf('There is an event dated %s, is this correct?', $e->date);
+            $error->type_broad = 'chronology';
+            $error->type_specific = 'events < 1000AD';
+            $error->eval_broad = 'warning';            
+            $error->eval_specific = '';            
+            $error->message = sprintf('Event prior to 1000AD, dated %s.', $e->date);
             $error->save();
         }
     }
@@ -134,9 +136,12 @@ class CheckController extends BaseController
             $error = new GedcomError();
             $error->gedcom_id = $gedcom->id;
             $error->indi_id = $e->id;
-            $error->classification = 'incorrect';
-            $error->severity = 'error';
-            $error->message = sprintf('There is a %s event before the BIRT event for %s.', $e->event, $e->gedcom_key);
+            $error->type_broad = 'chronology';
+            $error->type_specific = 'event before birth';
+            $error->eval_broad = 'error';            
+            $error->eval_specific = '';
+            $error->message = sprintf('There is a ' .  $e->event . ' event before the BIRT event for '
+                    . $e->first_name . ' ' . $e->last_name . ' (' . $e->gedcom_key) . ').';
             $error->save();
         }
     }
@@ -152,9 +157,12 @@ class CheckController extends BaseController
             $error = new GedcomError();
             $error->gedcom_id = $gedcom->id;
             $error->indi_id = $i->id;
-            $error->classification = 'incorrect';
-            $error->severity = $i->age > 122 ? 'error' : 'warning';
-            $error->message = sprintf('The lifespan of %s is %d years, is this correct?', $i->gedcom_key, $i->age);
+            $error->type_broad = 'lifespan';
+            $error->type_specific = 'warn: >110, err: >122';
+            $error->eval_broad = $i->age > 122 ? 'error' : 'warning';
+            $error->eval_specific = '';
+            $error->message = sprintf('Lifespan of ' . $i->age . ' years for ' .
+                    $i->first_name . ' ' . $i->last_name . ' (' . $i->gedcom_key . ').');            
             $error->save();
         }
 
@@ -163,9 +171,12 @@ class CheckController extends BaseController
             $error = new GedcomError();
             $error->gedcom_id = $gedcom->id;
             $error->indi_id = $i->id;
-            $error->classification = 'incorrect';
-            $error->severity = 'error';
-            $error->message = sprintf('The DEAT event of %s occurs before the BIRT event.', $i->gedcom_key);
+            $error->type_broad = 'lifespan';
+            $error->type_specific = 'err: <0';
+            $error->eval_broad = 'error';
+            $error->eval_specific = '';
+            $error->message = sprintf('Death occurs ' . $i->age . ' years before birth for ' .
+                    $i->first_name . ' ' . $i->last_name . ' (' . $i->gedcom_key . ').');             
             $error->save();
         }
     }
@@ -217,10 +228,13 @@ class CheckController extends BaseController
         {
             $error = new GedcomError();
             $error->gedcom_id = $gedcom->id;
-            $error->indi_id = $i->id;
-            $error->classification = 'incorrect';
-            $error->severity = $i->age > 60 ? 'error' : 'warning';
-            $error->message = sprintf('The parental age of %s is %d years, is this correct?', $i->gedcom_key, $i->age);
+            $error->indi_id = $i->indi_id;
+            $error->type_broad = 'parental age';
+            $error->type_specific = 'warn: >55, err: >60';
+            $error->eval_broad = $i->age > 60 ? 'error' : 'warning';            
+            $error->eval_specific = '';
+            $error->message = sprintf('Maternal age of ' . $i->age . ' years for ' .
+                    $i->par_fn . ' ' . $i->par_ln . ' (' . $i->gedcom_i_key . ').');
             $error->save();
         }
 
@@ -228,12 +242,16 @@ class CheckController extends BaseController
         {
             $error = new GedcomError();
             $error->gedcom_id = $gedcom->id;
-            $error->indi_id = $i->id;
-            $error->classification = 'incorrect';
-            $error->severity = $i->age > 92 ? 'error' : 'warning';
-            $error->message = sprintf('The parental age of %s is %d years, is this correct?', $i->gedcom_key, $i->age);
+            $error->indi_id = $i->indi_id;
+            $error->type_broad = 'parental age';
+            $error->type_specific = 'warn: >80, err: >92';
+            $error->eval_broad = $i->age > 92 ? 'error' : 'warning';            
+            $error->eval_specific = '';
+            $error->message = sprintf('Paternal age of ' . $i->age . ' years for ' .
+                    $i->par_fn . ' ' . $i->par_ln . ' (' . $i->gedcom_i_key . ').');
             $error->save();
-        }
+        }        
+    
 
         foreach (array('husb', 'wife') as $parent)
         {
@@ -241,25 +259,18 @@ class CheckController extends BaseController
             {
                 $error = new GedcomError();
                 $error->gedcom_id = $gedcom->id;
-                $error->indi_id = $i->id;
-                $error->classification = 'incorrect';
-                $error->severity = $i->age < 7 ? 'error' : 'warning';
-                $error->message = sprintf('The parental age of %s is %d years, is this correct?', $i->gedcom_key, $i->age);
-                $error->save();
-            }
-
-            foreach ($gedcom->bornBeforeParent($parent) as $i)
-            {
-                $error = new GedcomError();
-                $error->gedcom_id = $gedcom->id;
-                $error->indi_id = $i->child_id;
-                $error->classification = 'incorrect';
-                $error->severity = 'error';
-                $error->message = sprintf('Individual %s is born before %s %s.', $i->child_key, $parent == 'husb' ? 'father' : 'mother', $i->parent_key);
+                $error->indi_id = $i->indi_id;
+                $error->type_broad = 'parental age';
+                $error->type_specific = 'warn: <11, err: <7';
+                $error->eval_broad = $i->age < 7 ? 'error' : 'warning';
+                $error->eval_specific = '';
+                $error->message = sprintf('Parental age of ' . $i->age . ' years for ' .
+                    $i->par_fn . ' ' . $i->par_ln . ' (' . $i->gedcom_i_key . ').');
                 $error->save();
             }
         }
     }
+ 
 
     /**
      * Checks the marriage age difference of GedcomFamilies, creates errors when (probably) incorrect.
@@ -272,9 +283,12 @@ class CheckController extends BaseController
             $error = new GedcomError();
             $error->gedcom_id = $gedcom->id;
             $error->fami_id = $f->id;
-            $error->classification = 'incorrect';
-            $error->severity = 'warning';
-            $error->message = sprintf('The marriage age difference of %s is %d years, is this correct?', $f->gedcom_key, $f->age);
+            $error->type_broad = 'marriage age';
+            $error->type_specific = 'warn: >30';
+            $error->eval_broad = 'warning';
+            $error->eval_specific = '';
+            $error->message = sprintf('Marriage age difference of ' . $f->age . ' years for couple with '
+                    . 'family ID ' . $f->gedcom_key .'.');
             $error->save();
         }
     }
@@ -295,8 +309,10 @@ class CheckController extends BaseController
                 $error = new GedcomError();
                 $error->gedcom_id = $gedcom->id;
                 $error->indi_id = $ind->id;
-                $error->classification = 'incorrect';
-                $error->severity = 'warning';
+                $error->type_broad = 'multiple parentage';
+                $error->type_specific = 'child in >1 family';
+                $error->eval_broad = 'warning';
+                $error->eval_specific = '';
                 $error->message = sprintf('Individual %s is listed as child in %d families', $ind->gedcom_key, $i->count);
                 $error->save();
             }

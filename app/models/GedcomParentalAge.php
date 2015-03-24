@@ -28,7 +28,7 @@ class GedcomParentalAge extends Eloquent
      * The database table used by the model.
      * @var string
      */
-    protected $table = 'parental_age';
+    protected $table = 'parental_ages';
 
     /**
      * Returns the Gedcom to which this GedcomStatistic belongs.
