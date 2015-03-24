@@ -81,6 +81,15 @@ class Gedcom extends Eloquent
     {
         return $this->hasMany('GedcomError', 'gedcom_id');
     }
+    
+    /**
+     * Returns the GedcomParentalAges belonging to this Gedcom.
+     * @return Illuminate\Database\Eloquent\Collection
+     */
+    public function parental_ages()
+    {
+        return $this->hasMany('GedcomParentalAge', 'gedcom_id');
+    }
 
     /**
      * Returns the GedcomGeocodes belonging to this Gedcom.
@@ -220,10 +229,31 @@ class Gedcom extends Eloquent
                         ->having('age', '<', $lifespan)->get();
     }
 
+    
     /*
      * Parental age
      */
+    public function parentalAgesJoins($parent)
+    {
+        //parent id is e1.indi_id, child id is e2.indi_id
+        return DB::table('children as c')
+                        ->join('families as f', 'c.fami_id', '=', 'f.id')
+                        ->join('events as e1', 'f.indi_id_' . $parent, '=', 'e1.indi_id')
+                        ->join('events as e2', 'c.indi_id', '=', 'e2.indi_id')
+                        ->where('e1.event', 'BIRT')
+                        ->where('e2.event', 'BIRT')
+                        ->where('c.gedcom_id', $this->id);                
+    }    
 
+    public function parentalAges($parent)
+    {
+        return $this->parentalAgesJoins($parent)
+                        ->select('c.fami_id as fami_id', 'e1.indi_id as par_id', 'e2.indi_id as chil_id', 
+                                $this->estDate('est_date'), $this->sqlAge('par_age'))
+                        ->get();
+    }
+      
+    
     public function parentalAge($gender)
     {
         return DB::table('individuals as i')
@@ -236,6 +266,7 @@ class Gedcom extends Eloquent
                         ->where('e2.event', 'BIRT')
                         ->where('i.gedcom_id', $this->id);
     }
+    
 
     public function parentalAgeLargerThan($gender, $age)
     {
@@ -329,7 +360,7 @@ class Gedcom extends Eloquent
     /**
      * Returns the raw SQL for calculating the age in years, given two events.
      * Do note we don't use TIMESTAMPDIFF, as this doesn't work for incomplete days.
-     * @param string $as A possible alias for this column
+     * @param string $as possible alias for this column
      * @return string
      */
     private function sqlAge($as = NULL)
@@ -337,5 +368,16 @@ class Gedcom extends Eloquent
         return DB::raw('YEAR(e2.date) - YEAR(e1.date) - (RIGHT(e1.date, 5) > RIGHT(e2.date, 5))'
                         . ($as ? ' AS ' . $as : ''));
     }
+    
+    /**
+     * Check two dates if either is estimated
+     * @param string $as possible alias for this column
+     * @return boolean
+     */
+    private function estDate($as = NULL)
+    {
+        return DB::raw('IF(e1.estimate + e2.estimate = 0, 0, 1)'
+                        . ($as ? ' AS ' . $as : ''));
+    }    
 
 }

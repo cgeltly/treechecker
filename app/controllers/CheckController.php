@@ -33,14 +33,30 @@ class CheckController extends BaseController
     }
 
     /**
-     * Checks a Gedcom for errors. 
+     * Generates statistics and checks the Gedcom file for errors. 
      * @param int $gedcom_id
      * @return Response the error overview page
      */
     public function getStart($gedcom_id)
     {
-        // Get the GEDCOM, delete existing errors from error check phase
+
+        // First, populate the parental age table
         $gedcom = Gedcom::findOrFail($gedcom_id);
+    
+        // Delete existing stats in table
+        $gedcom->parental_ages()->delete();
+
+        // Query log is save in memory, so need to disable it for large file parsing
+        DB::connection()->disableQueryLog();
+        DB::beginTransaction();
+
+        $this->parentalAgeStats($gedcom);
+
+        // End the transaction
+        DB::commit();
+
+        // Second, populate the errors table        
+        // Delete existing errors from error check phase
         $gedcom->errors()->where('stage', 'error_check')->delete();
 
         // Query log is save in memory, so need to disable it for large file parsing
@@ -66,7 +82,7 @@ class CheckController extends BaseController
         // Set the file as error checked
         $gedcom->error_checked = true;
         $gedcom->save();
-
+        
         // Redirect to the GEDCOM overview
         return Redirect::to('errors/gedcom/' . $gedcom_id);
     }
@@ -155,11 +171,48 @@ class CheckController extends BaseController
     }
 
     /**
-     * Checks the parental age of GedcomIndividuals, creates errors when (probably) incorrect.
+     * Calculates age of parents at birth of children.
+     * @param Gedcom $gedcom
+     */
+    private function parentalAgeStats($gedcom)
+    {
+
+        foreach ($gedcom->parentalAges('wife') as $i)
+        {
+            $mother_age = new GedcomParentalAge();
+            $mother_age->gedcom_id = $gedcom->id;
+            $mother_age->fami_id = $i->fami_id;
+            $mother_age->par_id = $i->par_id;
+            $mother_age->chil_id = $i->chil_id;    
+            $mother_age->par_age = $i->par_age; 
+            $mother_age->est_date = $i->est_date; 
+            $mother_age->par_sex = 'f';  
+            $mother_age->save();         
+        }
+
+        foreach ($gedcom->parentalAges('husb') as $i)
+        {
+            $father_age = new GedcomParentalAge();
+            $father_age->gedcom_id = $gedcom->id;
+            $father_age->fami_id = $i->fami_id;
+            $father_age->par_id = $i->par_id;
+            $father_age->chil_id = $i->chil_id;    
+            $father_age->par_age = $i->par_age; 
+            $father_age->est_date = $i->est_date; 
+            $father_age->par_sex = 'm';           
+            $father_age->save();         
+        }
+
+    }
+    
+        
+    /**
+     * Checks age of parents, creates errors when (probably) incorrect.
      * @param Gedcom $gedcom
      */
     private function checkParentalAge($gedcom)
-    {
+    {    
+        
         foreach ($gedcom->parentalAgeLargerThan('wife', 55) as $i)
         {
             $error = new GedcomError();
