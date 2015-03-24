@@ -10,5 +10,7 @@ return array(
 	'gedcom'                => 'GEDCOM',
 	'files'                 => 'Files',
     	'upload'                => 'Upload',
+        'parse'                 => 'Parse',
+        'check'                 => 'Check',
 
 );

@@ -47,7 +47,7 @@ doPoll();
 <th>@lang('gedcom/gedcoms/table.tree_name')</th>
 <th>@lang('gedcom/gedcoms/table.source')</th>
 <th>@lang('gedcom/gedcoms/table.notes')</th>
-<th>@lang('gedcom/gedcoms/table.parse')</th>
+<th>@lang('gedcom/gedcoms/table.check')</th>
 </tr>
 </thead>
 </table>
@@ -58,4 +58,4 @@ doPoll();
 </div>
 </div>
 </div>
-@include('layouts.table', array('ajax_source' => 'gedcoms/unparseddata', 'id' => 'gedcoms'))
+@include('layouts.table', array('ajax_source' => 'gedcoms/uncheckeddata', 'id' => 'gedcoms'))
