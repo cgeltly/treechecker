@@ -17,8 +17,8 @@ class NotesTest extends TestCase
      */
     public function testIndividual()
     {
-        // This GEDCOM has 3 notes in total
-        $this->assertEquals($this->gedcom->notes()->count(), 3);
+        // This GEDCOM has 5 notes in total (3 on individuals, 2 on family)
+        $this->assertEquals($this->gedcom->notes()->count(), 5);
 
         // I1 has a referenced note
         $ind1 = GedcomIndividual::GedcomKey($this->gedcom->id, 'I1')->first();
@@ -31,6 +31,12 @@ class NotesTest extends TestCase
         $this->assertEquals($ind2->notes()->count(), 1);
         $note2 = $ind2->notes()->first();
         $this->assertNull($note2->gedcom_key);
+        
+        // I3 has a note on an event 
+        $ind3 = GedcomIndividual::GedcomKey($this->gedcom->id, 'I3')->first();
+        $this->assertEquals($ind3->notes()->count(), 1);
+        $note3 = $ind3->notes()->first();
+        $this->assertNotNull($note3->even_id);
     }
 
     /**
@@ -38,9 +44,9 @@ class NotesTest extends TestCase
      */
     public function testFamily()
     {
-        // F1 has a note
+        // F1 has two notes, one of which related to an event
         $fam = GedcomFamily::GedcomKey($this->gedcom->id, 'F1')->first();
-        $this->assertEquals($fam->notes()->count(), 1);
+        $this->assertEquals($fam->notes()->count(), 2);
     }
 
     /**
@@ -48,12 +54,12 @@ class NotesTest extends TestCase
      */
     public function testParseErrors()
     {
-        // N4 is not linked to any individual, family or event
-        $this->assertEquals($this->gedcom->errors()->count(), 3);
+        $this->assertEquals($this->gedcom->errors()->count(), 2);
         
         $error_messages = implode(' ', $this->gedcom->errors()->lists('message'));
-        $this->assertContains('N3', $error_messages); // This is a note on an event: not parsed yet!
+        // N4 is not linked to any individual, family or event
         $this->assertContains('N4', $error_messages);
+        // N5 is not defined in the GEDCOM file
         $this->assertContains('N5', $error_messages);
     }
 
