@@ -363,7 +363,7 @@ class ParseController extends BaseController
         }
         else if (starts_with($ref, 'E'))
         {
-            $even_id = substr($ref, 1); 
+            $even_id = substr($ref, 1);
             $event = GedcomEvent::find($even_id);
             $note->even_id = $event->id;
             $note->indi_id = $event->indi_id;
