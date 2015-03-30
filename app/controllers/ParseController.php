@@ -88,8 +88,9 @@ class ParseController extends BaseController
                 $error->gedcom_id = $gedcom_id;
                 $error->stage = 'parsing';
                 $error->type_broad = 'missing';
-                $error->type_broad = 'note definition';                
+                $error->type_specific = 'note definition';
                 $error->eval_broad = 'error';
+                $error->eval_specific = '';
                 $error->message = sprintf('No definition found for NOTE %s on %s', $n, $r);
                 $error->save();
             }
@@ -209,6 +210,7 @@ class ParseController extends BaseController
             $error->type_broad = 'standards';
             $error->type_specific = 'non-standard tags';
             $error->eval_broad = 'warning';
+            $error->eval_specific = '';
             $error->message = sprintf('Invalid GEDCOM format: %s', $gedrec);
             $error->save();
 
@@ -338,8 +340,9 @@ class ParseController extends BaseController
             $error->gedcom_id = $gedcom_id;
             $error->stage = 'parsing';
             $error->type_broad = 'missing';
-            $error->type_specific = 'note missing';            
+            $error->type_specific = 'note missing';
             $error->eval_broad = 'error';
+            $error->eval_specific = '';
             $error->message = sprintf('No NOTE reference found for %s', $xref);
             $error->save();
         }
@@ -357,6 +360,14 @@ class ParseController extends BaseController
         else if (starts_with($ref, 'F'))
         {
             $note->fami_id = substr($ref, 1);
+        }
+        else if (starts_with($ref, 'E'))
+        {
+            $even_id = substr($ref, 1);
+            $event = GedcomEvent::find($even_id);
+            $note->even_id = $event->id;
+            $note->indi_id = $event->indi_id;
+            $note->fami_id = $event->fami_id;
         }
         $note->note = $note_text;
         $note->gedcom = $gedrec;
@@ -570,6 +581,7 @@ class ParseController extends BaseController
                 $error->type_broad = 'data integrity';
                 $error->type_specific = 'no @I ref. for child';            
                 $error->eval_broad = 'error';
+                $error->eval_specific = '';
                 $error->message = sprintf('No record for individual %s, but listed as a child in family %s.', $child, $family->gedcom_key);
                 $error->save();
             }
@@ -585,7 +597,6 @@ class ParseController extends BaseController
      */
     private function processEvents($record, $gedcom_id, $indi_id = NULL, $fami_id = NULL)
     {
-        $events = array();
         foreach ($record->getFacts() as $fact)
         {
             // Retrieve the date and place
@@ -652,7 +663,7 @@ class ParseController extends BaseController
                         'NAME', 'CREA', '_FID', 'OBJE', 'HUSB', 'WIFE', 'SEX', 'NOTE', 'SOUR',)))
             {
                 $time = new DateTime();
-                $events[] = array(
+                $event = array(
                     'gedcom_id' => $gedcom_id,
                     'indi_id' => $indi_id,
                     'fami_id' => $fami_id,
@@ -670,37 +681,81 @@ class ParseController extends BaseController
             }
             else if ($fact->getTag() == 'NOTE')
             {
-                // Create a reference for later lookup
-                $ref = $indi_id ? ('I' . $indi_id) : ('F' . $fami_id);
-                
-                // If there is a reference to a note; save that in the noteMap
-                if (starts_with($fact->getValue(), '@'))
-                {
-                    $key = trim($fact->getValue(), '@');
-                    $this->noteMap[$key] = $ref;
-                }
-                // If it's an embedded note, save it directly
-                else
-                {
-                    $this->createNote(NULL, $fact->getGedcom(), $gedcom_id, $ref, $fact->getValue());
-                }
+                $this->addOrCreateNote($fact, $gedcom_id, $indi_id, $fami_id);
             }
-            
-            // TODO: parse notes on an event
-        }
 
-        if ($events)
+            if (isset($event))
+            {
+                // Insert the event into the database 
+                $event_id = DB::table('events')->insertGetId($event);
+
+                // Parse event notes
+                $this->parseEventNotes($fact, $gedcom_id, $event_id);
+            }
+        }
+    }
+
+    /**
+     * Either creates a note in the noteMap for later lookup 
+     * or creates the note directly (for embedded notes)
+     * @param WT_Fact $fact
+     * @param int $gedcom_id
+     * @param int $indi_id
+     * @param int $fami_id
+     */
+    private function addOrCreateNote($fact, $gedcom_id, $indi_id, $fami_id)
+    {
+        // Create a reference for later lookup
+        $ref = $indi_id ? ('I' . $indi_id) : ('F' . $fami_id);
+
+        // If there is a reference to a note; save that in the noteMap
+        if (starts_with($fact->getValue(), '@'))
         {
-            DB::table('events')->insert($events);
+            $key = trim($fact->getValue(), '@');
+            $this->noteMap[$key] = $ref;
+        }
+        // If it's an embedded note, save it directly
+        else
+        {
+            $this->createNote(NULL, $fact->getGedcom(), $gedcom_id, $ref, $fact->getValue());
+        }
+    }
+
+    /**
+     * Parses embedded and referenced notes on an event.
+     * @param WT_Fact $fact
+     * @param int $gedcom_id
+     * @param int $event_id
+     */
+    private function parseEventNotes($fact, $gedcom_id, $event_id)
+    {
+        // Create a reference for later lookup
+        $ref = 'E' . $event_id;
+
+        // Parse notes on an event
+        preg_match_all('/\n2 NOTE ?(.*(?:\n3.*)*)/', $fact->getGedcom(), $matches);
+        foreach ($matches[1] as $match)
+        {
+            $note = preg_replace("/\n3 CONT ?/", "\n", $match);
+            if (preg_match('/@(' . WT_REGEX_XREF . ')@/', $note, $nmatch))
+            {
+                // If there is a reference to a note; save that in the noteMap
+                $this->noteMap[$nmatch[1]] = $ref;
+            }
+            else
+            {
+                // If it's an embedded note, save it directly
+                $this->createNote(NULL, $match, $gedcom_id, $ref, $note);
+            }
         }
     }
 
     /**
      * Retrieve the date from a fact. 
      * @param WT_Fact $fact
-     * @param $gedcom_id
-     * @param $indi_id
-     * @param $fami_id
+     * @param int $gedcom_id
+     * @param int $indi_id
+     * @param int $fami_id
      * @return array
      */
     private function retrieveDate($fact, $gedcom_id, $indi_id, $fami_id)
@@ -737,8 +792,9 @@ class ParseController extends BaseController
                 $error->fami_id = $fami_id;
                 $error->stage = 'parsing';
                 $error->type_broad = 'date format';
-                $error->type_specific = 'impossible or US format';            
+                $error->type_specific = 'impossible or US format';
                 $error->eval_broad = 'error';
+                $error->eval_specific = '';
                 $error->message = sprintf('Impossible or US formatted date ' . implode('-', array($date->date1->y, $date->date1->m, $date->date1->d)) . '');
                 $error->save();
             }
@@ -810,8 +866,9 @@ class ParseController extends BaseController
                 $error->fami_id = $family_id;
                 $error->stage = 'parsing';
                 $error->type_broad = 'gender';
-                $error->type_specific = 'parent of other sex';            
-                $error->eval_broad = 'error';                
+                $error->type_specific = 'parent of other sex';
+                $error->eval_broad = 'error';
+                $error->eval_specific = '';
                 $error->message = sprintf('Individual %s is listed as %s in family record, '
                         . 'but listed as %s in individual record.', $ind->gedcom_key, $gender === 'm' ? 'husband' : 'wife', $ind->sex === 'm' ? 'male' : 'female');
                 $error->save();

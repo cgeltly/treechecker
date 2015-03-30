@@ -28,7 +28,6 @@
 1 SEX M
 1 BIRT
 2 DATE 12 APR 1919
-2 NOTE @N3@
 1 FAMS @F1@
 1 NOTE This is a direct note on an individual
 2 CONC 
@@ -42,6 +41,7 @@
 1 SEX F
 1 BIRT
 2 DATE 7 FEB 1920
+2 NOTE @N3@
 1 DEAT Y
 2 DATE 15 JUL 1980
 1 FAMS @F1@
@@ -51,6 +51,9 @@
 1 WIFE @I3@
 1 CHIL @I1@
 1 NOTE @N2@
+1 MARR 
+2 DATE 17 MAY 1940
+2 NOTE This is an embedded note on an event, related to a family.
 1 _CURRENT Y
 0 @N1@ NOTE
 1 CONC This is a test note on an individual.
