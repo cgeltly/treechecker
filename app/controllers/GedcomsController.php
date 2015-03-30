@@ -53,9 +53,9 @@ class GedcomsController extends BaseController
     }
 
     /*
-     * Show a list of all the unparsed gedcoms.
+     * Show a list of all unparsed gedcoms.
      */
-    public function getUnchecked()
+    public function getUnchecked() 
     {
         Session::forget('progress');
         $this->layout->content = View::make('gedcom/gedcoms/unchecked');
