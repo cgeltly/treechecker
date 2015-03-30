@@ -29,9 +29,14 @@ class CreateErrorsTable extends Migration
             $table->string('message');
             $table->timestamps();
             
-            $table->foreign('gedcom_id')->references('id')->on('gedcoms')->onDelete('cascade');
             $table->foreign('indi_id')->references('id')->on('individuals')->onDelete('cascade');
             $table->foreign('fami_id')->references('id')->on('families')->onDelete('cascade');
+            $table->index('gedcom_id');             
+            $table->index('type_broad');  
+            $table->index('type_specific');  
+            $table->index('eval_broad');  
+            $table->index('eval_specific');  
+            
         });
     }
 

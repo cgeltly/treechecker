@@ -52,6 +52,15 @@ class GedcomsController extends BaseController
         $this->layout->content = View::make('gedcom/gedcoms/unparsed');
     }
 
+    /*
+     * Show a list of all the unparsed gedcoms.
+     */
+    public function getUnchecked()
+    {
+        Session::forget('progress');
+        $this->layout->content = View::make('gedcom/gedcoms/unchecked');
+    }    
+    
     /**
      * Shows a single GEDCOM file, with some statistics. 
      * @param int $id the Gedcom ID
@@ -116,9 +125,9 @@ class GedcomsController extends BaseController
                 'avg_age' => number_format($gedcom->avg_lifespan(), 2),
                 'max_age' => $gedcom->max_lifespan(),
                 'min_age' => $gedcom->min_lifespan(),
-                'avg_marriage_age' => number_format($gedcom->avgMarriageAge(), 2),
-                'max_marriage_age' => $gedcom->maxMarriageAge(),
-                'min_marriage_age' => $gedcom->minMarriageAge(),
+//                'avg_marriage_age' => number_format($gedcom->avgMarriageAge(), 2),
+//                'max_marriage_age' => $gedcom->maxMarriageAge(),
+//                'min_marriage_age' => $gedcom->minMarriageAge(),
                 'all_fami' => $fam_count,
                 'fams_with_children' => sprintf('%d (%.2f%%)', $num_fams_with_children, $this->percentage($num_fams_with_children, $fam_count)),
                 'avg_fam_size' => $avg_fam_size,
@@ -352,6 +361,33 @@ class GedcomsController extends BaseController
                         ->make();
     }
 
+    /**
+     * Show a list of all the unchecked gedcoms formatted for Datatables.
+     * @return Datatables JSON
+     */
+    public function getUncheckeddata()
+    {
+        $user = Auth::user();
+        
+        $gedcoms = Gedcom::select(array('file_name', 'tree_name', 'source', 'notes', 'error_checked', 'id'));
+        $gedcoms->where('error_checked', 0);
+        if ($user->role != 'admin')
+        {
+            $gedcoms->where('user_id', $user->id);
+        }
+
+        return Datatables::of($gedcoms)
+                        ->edit_column('file_name', '{{ HTML::link("gedcoms/show/" . $id, $file_name) }}')
+                        ->edit_column('notes', '{{{ Str::words($notes, 10) }}}')
+                        ->add_column('check_url', '{{ HTML::link("errors/gedcom/" . $id, "Check") }}')
+                        ->remove_column('error_checked')
+                        ->remove_column('id')
+                        ->make();
+    }
+    
+    
+    
+    
     /**
      * Show a list of all the GedcomIndividuals formatted for Datatables.
      * @return Datatables JSON

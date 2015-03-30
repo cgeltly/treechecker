@@ -567,7 +567,7 @@ class ParseController extends BaseController
                 $error->gedcom_id = $gedcom_id;
                 $error->fami_id = $family->id;
                 $error->stage = 'parsing';
-                $error->type_broad = 'missing';
+                $error->type_broad = 'data integrity';
                 $error->type_specific = 'no @I ref. for child';            
                 $error->eval_broad = 'error';
                 $error->message = sprintf('No record for individual %s, but listed as a child in family %s.', $child, $family->gedcom_key);
