@@ -40,21 +40,25 @@ class CheckController extends BaseController
     public function getStart($gedcom_id)
     {
 
-        // First, populate the parental age table
+        // First, populate the parental and marriage age tables
         $gedcom = Gedcom::findOrFail($gedcom_id);
     
         // Delete existing stats in table
         $gedcom->parental_ages()->delete();
+        $gedcom->marriage_ages()->delete();        
+        $gedcom->lifespans()->delete();            
 
-        // Query log is save in memory, so need to disable it for large file parsing
+        // Disable query log for parsing large files; begin transaction
         DB::connection()->disableQueryLog();
         DB::beginTransaction();
 
         $this->parentalAgeStats($gedcom);
+        $this->marriageAgeStats($gedcom);   
+        $this->lifespanStats($gedcom);          
 
         // End the transaction
         DB::commit();
-
+        
         // Second, populate the errors table        
         // Delete existing errors from error check phase
         $gedcom->errors()->where('stage', 'error_check')->delete();
@@ -95,7 +99,7 @@ class CheckController extends BaseController
      */
     private function checkEventDates($gedcom)
     {
-        $this->checkEventsBeforeDate($gedcom, '1000-00-00');
+        $this->checkEventsBeforeDate($gedcom, '500-00-00');
         $this->checkEventsBeforeBirth($gedcom);
     }
 
@@ -216,6 +220,47 @@ class CheckController extends BaseController
 
     }
     
+    /**
+     * Calculates age of parents at birth of children.
+     * @param Gedcom $gedcom
+     */
+    private function marriageAgeStats($gedcom)
+    {
+
+        foreach ($gedcom->marriageAges() as $i)
+        {
+            $marriage_age = new GedcomMarriageAge();
+            $marriage_age->gedcom_id = $gedcom->id;
+            $marriage_age->fami_id = $i->fami_id;
+            $marriage_age->indi_id_husb = $i->indi_id_husb;
+            $marriage_age->indi_id_wife = $i->indi_id_wife;            
+            $marriage_age->marr_age_husb = $i->marr_age_husb;   
+            $marriage_age->marr_age_wife = $i->marr_age_wife;             
+            $marriage_age->est_date_age_husb = $i->est_date_age_husb; 
+            $marriage_age->est_date_age_wife = $i->est_date_age_wife; 
+            $marriage_age->save();         
+        }
+    } 
+    
+    
+    /**
+     * Calculates lifespan of individuals.
+     * @param Gedcom $gedcom
+     */
+    private function lifespanStats($gedcom)
+    {
+
+        foreach ($gedcom->allLifespans() as $i)
+        {
+            $lifespan = new GedcomLifespan();
+            $lifespan->gedcom_id = $gedcom->id;
+            $lifespan->indi_id = $i->indi_id;            
+            $lifespan->lifespan = $i->lifespan;             
+            $lifespan->est_date = $i->est_date; 
+            $lifespan->save();         
+        }
+    } 
+    
         
     /**
      * Checks age of parents, creates errors when (probably) incorrect.
@@ -273,7 +318,8 @@ class CheckController extends BaseController
  
 
     /**
-     * Checks the marriage age difference of GedcomFamilies, creates errors when (probably) incorrect.
+     * Checks the spousal age difference of GedcomFamilies, creates errors when (probably) incorrect.
+     * TODO: need to rename the method, because the marriage event is not queried
      * @param Gedcom $gedcom
      */
     private function checkMarriageAgeDiff($gedcom)

@@ -90,7 +90,25 @@ class Gedcom extends Eloquent
     {
         return $this->hasMany('GedcomParentalAge', 'gedcom_id');
     }
+    
+    /**
+     * Returns the GedcomMarriageAges belonging to this Gedcom.
+     * @return Illuminate\Database\Eloquent\Collection
+     */
+    public function marriage_ages()
+    {
+        return $this->hasMany('GedcomMarriageAge', 'gedcom_id');
+    }
 
+    /**
+     * Returns the GedcomLifespans belonging to this Gedcom.
+     * @return Illuminate\Database\Eloquent\Collection
+     */
+    public function lifespans()
+    {
+        return $this->hasMany('GedcomLifespan', 'gedcom_id');
+    }    
+    
     /**
      * Returns the GedcomGeocodes belonging to this Gedcom.
      * @return Illuminate\Database\Eloquent\Collection
@@ -190,34 +208,36 @@ class Gedcom extends Eloquent
      * Lifespan
      */
 
-    public function lifespan()
+    public function lifespanJoins()
     {
         return DB::table('individuals as i')
                         ->join('events as e1', 'e1.indi_id', '=', 'i.id')
                         ->join('events as e2', 'e2.indi_id', '=', 'i.id')
                         ->where('e1.event', 'BIRT')
                         ->where('e2.event', 'DEAT')
+                        ->whereNotNull('e1.date')
+                        ->whereNotNull('e2.date')
                         ->where('i.gedcom_id', $this->id);
     }
 
     public function avg_lifespan()
     {
-        return $this->lifespan()->avg($this->sqlAge());
+        return $this->lifespanJoins()->avg($this->sqlAge());
     }
 
     public function max_lifespan()
     {
-        return $this->lifespan()->max($this->sqlAge());
+        return $this->lifespanJoins()->max($this->sqlAge());
     }
 
     public function min_lifespan()
     {
-        return $this->lifespan()->min($this->sqlAge());
+        return $this->lifespanJoins()->min($this->sqlAge());
     }
 
     public function lifespan_larger_than($lifespan)
     {
-        return $this->lifespan()
+        return $this->lifespanJoins()
                         ->select('i.id', 'i.gedcom_key', 'i.first_name as first_name', 'i.last_name as last_name',
                                 $this->sqlAge('age'))
                         ->having('age', '>=', $lifespan)->get();
@@ -225,12 +245,22 @@ class Gedcom extends Eloquent
 
     public function lifespan_less_than($lifespan = 0)
     {
-        return $this->lifespan()
+        return $this->lifespanJoins()
                         ->select('i.id', 'i.gedcom_key', 'i.first_name as first_name', 'i.last_name as last_name',
-                                $this->dateDiff('age'))
+                                $this->dateDiff('e1', 'age'))
                         ->having('age', '<', $lifespan)->get();
     }
 
+    
+    public function allLifespans()
+    {
+        return $this->lifespanJoins()
+                        ->select('i.id as indi_id', 'i.gedcom_id', $this->dateDiff('e1', 'lifespan'),
+                                $this->estDate('e1.estimate', 'e2.estimate', 'est_date'))
+                        ->get();
+    }
+    
+    
     
     /*
      * Parental age
@@ -252,7 +282,7 @@ class Gedcom extends Eloquent
     {
         return $this->parentalAgesJoins($parent)
                         ->select('c.fami_id as fami_id', 'e1.indi_id as par_id', 'e2.indi_id as chil_id', 
-                                $this->estDate('est_date'), $this->sqlAge('par_age'))
+                                $this->estDate('e1.estimate', 'e2.estimate', 'est_date'), $this->sqlAge('par_age'))
                         ->get();
     }
       
@@ -275,7 +305,37 @@ class Gedcom extends Eloquent
     
 
     /*
-     * Marriage age difference
+     * Marriage age
+     */
+    public function marriageAgesJoins()
+    {
+        return DB::table('families as f')
+                        ->join('events as e2', 'e2.fami_id', '=', 'f.id')
+                        ->join('events as e1', 'f.indi_id_husb', '=', 'e1.indi_id')
+                        ->join('events as e0', 'f.indi_id_wife', '=', 'e0.indi_id')
+                        ->where('e2.event', 'MARR')
+                        ->where('e1.event', 'BIRT')
+                        ->where('e0.event', 'BIRT')
+                        ->whereRaw('((e1.date IS NOT NULL OR e0.date IS NOT NULL) AND e2.date IS NOT NULL) ')
+                        ->where('f.gedcom_id', $this->id);  
+    }     
+    
+    public function marriageAges()
+    {
+        return $this->marriageAgesJoins()
+                ->select('f.id as fami_id', 'e1.indi_id as indi_id_husb', 
+                        'e0.indi_id as indi_id_wife', $this->dateDiff('e1', 'marr_age_husb'),
+                        $this->dateDiff('e0', 'marr_age_wife'),
+                        $this->estDate('e1.estimate','e2.estimate', 'est_date_age_husb'), 
+                        $this->estDate('e0.estimate', 'e2.estimate', 'est_date_age_wife'))
+                ->get();
+    }
+    
+    
+    
+    /*
+     * Spousal age gap
+     * TODO: rename functions, becuase no actual marriage event involved
      */
 
     public function marriageAgeDiff()
@@ -316,13 +376,6 @@ class Gedcom extends Eloquent
                         ->where('i.gedcom_id', $this->id);
     }
 
-    public function marriageAges()
-    {
-        return $this->marriageAge()
-                        ->select('i.id', 'i.sex', 'e1.date as birth_date', $this->sqlAge('marriage_age'))
-                        ->get();
-    }
-
     public function avgMarriageAge()
     {
         return $this->marriageAge()->avg($this->sqlAge());
@@ -351,29 +404,32 @@ class Gedcom extends Eloquent
     private function sqlAge($as = NULL)
     {
         return DB::raw('YEAR(e2.date) - YEAR(e1.date) - (RIGHT(e1.date, 5) > RIGHT(e2.date, 5))'
-                        . ($as ? ' AS ' . $as : ''));
+                    . ($as ? ' AS ' . $as : ''));
     }
     
-     /**
+    /**
      * Use MySQL DATEDIFF to get difference between dates if both are complete, 
      * otherwise do straight subtraction of one year from the other 
      * @param string $as possible alias for this column
+     * @param string $birth_alias is birth event query alias
      * @return string
      */
-    private function dateDiff($as = NULL)
+    private function dateDiff($birth_alias, $as = NULL)
     {
-        return DB::raw('IF(ISNULL(DATEDIFF(e2.date, e1.date)), YEAR(e2.date)-YEAR(e1.date), '
-                        . 'TRUNCATE(((DATEDIFF(e2.date, e1.date))/365.25), 0))'
-                        . ($as ? ' AS ' . $as : ''));
-    }   
+        return DB::raw('IF(ISNULL(DATEDIFF(e2.date, ' . $birth_alias. '.date)), YEAR(e2.date)-YEAR(' . $birth_alias. '.date), '
+                    . 'TRUNCATE(((DATEDIFF(e2.date, ' . $birth_alias. '.date))/365.25), 0))'
+                    . ($as ? ' AS ' . $as : ''));
+    }  
+    
     /**
-     * Check two dates if either is estimated
+     * Check if either of two dates is estimated
+     * @param $estimate1 and $estimate2 as SQL alias to events.estimate for each date
      * @param string $as possible alias for this column
      * @return boolean
      */
-    private function estDate($as = NULL)
+    private function estDate($estimate1, $estimate2, $as = NULL)
     {
-        return DB::raw('IF(e1.estimate + e2.estimate = 0, 0, 1)'
+        return DB::raw('IF(' . $estimate1 . '+' . $estimate2 . '= 0, 0, 1)'
                         . ($as ? ' AS ' . $as : ''));
     }  
     

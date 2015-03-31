@@ -29,7 +29,6 @@ class CreateParentalAgesTable extends Migration
             
             $table->timestamps();
             
-            $table->foreign('gedcom_id')->references('id')->on('gedcoms')->onDelete('cascade');
             $table->foreign('chil_id')->references('id')->on('individuals')->onDelete('cascade');
             $table->foreign('par_id')->references('id')->on('individuals')->onDelete('cascade');
             $table->foreign('fami_id')->references('id')->on('families')->onDelete('cascade');
