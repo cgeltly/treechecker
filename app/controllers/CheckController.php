@@ -99,7 +99,7 @@ class CheckController extends BaseController
      */
     private function checkEventDates($gedcom)
     {
-        $this->checkEventsBeforeDate($gedcom, '500-00-00');
+        $this->checkEventsBeforeDate($gedcom, '1000-00-00');
         $this->checkEventsBeforeBirth($gedcom);
     }
 
