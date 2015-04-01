@@ -599,6 +599,8 @@ class ParseController extends BaseController
     {
         foreach ($record->getFacts() as $fact)
         {
+            $event = NULL;
+            
             // Retrieve the date and place
             $date = $this->retrieveDate($fact, $gedcom_id, $indi_id, $fami_id);
             $place = $this->retrievePlace($fact);
@@ -684,7 +686,7 @@ class ParseController extends BaseController
                 $this->addOrCreateNote($fact, $gedcom_id, $indi_id, $fami_id);
             }
 
-            if (isset($event))
+            if ($event)
             {
                 // Insert the event into the database 
                 $event_id = DB::table('events')->insertGetId($event);
