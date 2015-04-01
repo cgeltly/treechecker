@@ -128,6 +128,15 @@ class Gedcom extends Eloquent
     }
 
     /**
+     * Returns the GedcomSources belonging to this Gedcom.
+     * @return Illuminate\Database\Eloquent\Collection
+     */
+    public function sources()
+    {
+        return $this->hasMany('GedcomSource', 'gedcom_id');
+    }
+
+    /**
      * Returns the GedcomChildren belonging to this Gedcom through the GedcomFamilies.
      * @return Illuminate\Database\Eloquent\Collection
      */

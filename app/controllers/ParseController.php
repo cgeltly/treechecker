@@ -25,6 +25,7 @@ class ParseController extends BaseController
 {
 
     private $noteMap = array();
+    private $sourceMap = array();
 
     public function __construct()
     {
@@ -92,6 +93,20 @@ class ParseController extends BaseController
                 $error->eval_broad = 'error';
                 $error->eval_specific = '';
                 $error->message = sprintf('No definition found for NOTE %s on %s', $n, $r);
+                $error->save();
+            }
+
+            // If we reached this point, and there are still notes in the sourceMap, add parse errors
+            foreach ($this->sourceMap as $s => $r)
+            {
+                $error = new GedcomError();
+                $error->gedcom_id = $gedcom_id;
+                $error->stage = 'parsing';
+                $error->type_broad = 'missing';
+                $error->type_specific = 'note definition';
+                $error->eval_broad = 'error';
+                $error->eval_specific = '';
+                $error->message = sprintf('No definition found for SOUR %s on %s', $s, $r);
                 $error->save();
             }
 
@@ -228,6 +243,9 @@ class ParseController extends BaseController
             case 'NOTE':
                 $this->processNote($xref, $gedrec, $gedcom_id);
                 break;
+            case 'SOUR':
+                $this->processSource($xref, $gedrec, $gedcom_id);
+                break;
             case '_PLAC':
                 $this->processGeocode($gedrec, $gedcom_id);
                 break;
@@ -313,7 +331,8 @@ class ParseController extends BaseController
     }
 
     /**
-     * Creates a GedcomNote. 
+     * Processes NOTE tags, finds its reference. 
+     * Creates a GedcomNote if the reference if found, adds a parse error otherwise.
      * @param string $xref
      * @param string $gedrec
      * @param int $gedcom_id
@@ -348,6 +367,14 @@ class ParseController extends BaseController
         }
     }
 
+    /**
+     * Creates a new GedcomNote and finds it's reference(s)
+     * @param string $xref
+     * @param string $gedrec
+     * @param int $gedcom_id
+     * @param string $ref
+     * @param string $note_text
+     */
     private function createNote($xref, $gedrec, $gedcom_id, $ref, $note_text)
     {
         $note = new GedcomNote();
@@ -372,6 +399,90 @@ class ParseController extends BaseController
         $note->note = $note_text;
         $note->gedcom = $gedrec;
         $note->save();
+    }
+
+    /**
+     * Processes SOUR tags, finds its reference. 
+     * Creates a GedcomSource if the reference if found, adds a parse error otherwise.
+     * @param string $xref
+     * @param string $gedrec
+     * @param int $gedcom_id
+     */
+    private function processSource($xref, $gedrec, $gedcom_id)
+    {        
+        // Find the Source in the sourceMap 
+        if (array_key_exists($xref, $this->sourceMap))
+        {
+            $ref = $this->sourceMap[$xref];
+
+            // Create the GedcomSource
+            $this->createSource($xref, $gedrec, $gedcom_id, $ref);
+
+            // Remove the key from the sourceMap
+            unset($this->sourceMap[$xref]);
+        }
+        // If the Source doesn't exist, add a parse error
+        else
+        {
+            $error = new GedcomError();
+            $error->gedcom_id = $gedcom_id;
+            $error->stage = 'parsing';
+            $error->type_broad = 'missing';
+            $error->type_specific = 'source missing';
+            $error->eval_broad = 'error';
+            $error->eval_specific = '';
+            $error->message = sprintf('No SOUR reference found for %s', $xref);
+            $error->save();
+        }
+    }
+
+    /**
+     * Creates a new GedcomSource and finds it's reference(s)
+     * @param string $xref
+     * @param string $gedrec
+     * @param int $gedcom_id
+     * @param string $ref
+     */
+    private function createSource($xref, $gedrec, $gedcom_id, $ref)
+    {
+        $source = new GedcomSource();
+        $source->gedcom_id = $gedcom_id;
+        $source->gedcom_key = $xref;
+
+        // Set title
+        if (preg_match('/\n1 TITL (.+)/', $gedrec, $match))
+        {
+            $source->title = $match[1];
+        }
+        else if (preg_match('/\n1 ABBR (.+)/', $gedrec, $match))
+        {
+            $source->title = $match[1];
+        }
+        else
+        {
+            $source->title = $xref;
+        }
+
+        // Set references
+        if (starts_with($ref, 'I'))
+        {
+            $source->indi_id = substr($ref, 1);
+        }
+        else if (starts_with($ref, 'F'))
+        {
+            $source->fami_id = substr($ref, 1);
+        }
+        else if (starts_with($ref, 'E'))
+        {
+            $even_id = substr($ref, 1);
+            $event = GedcomEvent::find($even_id);
+            $source->even_id = $event->id;
+            $source->indi_id = $event->indi_id;
+            $source->fami_id = $event->fami_id;
+        }
+
+        $source->gedcom = $gedrec;
+        $source->save();
     }
 
     /**
@@ -579,7 +690,7 @@ class ParseController extends BaseController
                 $error->fami_id = $family->id;
                 $error->stage = 'parsing';
                 $error->type_broad = 'data integrity';
-                $error->type_specific = 'no @I ref. for child';            
+                $error->type_specific = 'no @I ref. for child';
                 $error->eval_broad = 'error';
                 $error->eval_specific = '';
                 $error->message = sprintf('No record for individual %s, but listed as a child in family %s.', $child, $family->gedcom_key);
@@ -600,7 +711,7 @@ class ParseController extends BaseController
         foreach ($record->getFacts() as $fact)
         {
             $event = NULL;
-            
+
             // Retrieve the date and place
             $date = $this->retrieveDate($fact, $gedcom_id, $indi_id, $fami_id);
             $place = $this->retrievePlace($fact);
@@ -685,14 +796,19 @@ class ParseController extends BaseController
             {
                 $this->addOrCreateNote($fact, $gedcom_id, $indi_id, $fami_id);
             }
+            else if ($fact->getTag() == 'SOUR')
+            {
+                $this->addSource($fact, $indi_id, $fami_id);
+            }
 
             if ($event)
             {
                 // Insert the event into the database 
                 $event_id = DB::table('events')->insertGetId($event);
 
-                // Parse event notes
+                // Parse event notes and sources
                 $this->parseEventNotes($fact, $gedcom_id, $event_id);
+                $this->parseEventSources($fact, $event_id);
             }
         }
     }
@@ -748,6 +864,42 @@ class ParseController extends BaseController
             {
                 // If it's an embedded note, save it directly
                 $this->createNote(NULL, $match, $gedcom_id, $ref, $note);
+            }
+        }
+    }
+
+    /**
+     * Creates a note in the sourceMap for later lookup
+     * @param WT_Fact $fact
+     * @param int $indi_id
+     * @param int $fami_id
+     */
+    private function addSource($fact, $indi_id, $fami_id)
+    {        
+        // Create a reference for later lookup
+        $ref = $indi_id ? ('I' . $indi_id) : ('F' . $fami_id);
+        $key = trim($fact->getValue(), '@');
+        $this->sourceMap[$key] = $ref;
+    }
+    
+    /**
+     * Parses referenced sources on an event.
+     * @param WT_Fact $fact
+     * @param int $event_id
+     */
+    private function parseEventSources($fact, $event_id)
+    {
+        // Create a reference for later lookup
+        $ref = 'E' . $event_id;
+
+        // Parse notes on an event
+        preg_match_all('/\n2 SOUR ?(.*(?:\n3.*)*)/', $fact->getGedcom(), $matches);
+        foreach ($matches[1] as $match)
+        {
+            if (preg_match('/@(' . WT_REGEX_XREF . ')@/', $match, $nmatch))
+            {
+                // If there is a reference to a source; save that in the sourceMap
+                $this->sourceMap[$nmatch[1]] = $ref;
             }
         }
     }

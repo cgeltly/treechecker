@@ -92,6 +92,15 @@ class GedcomFamily extends Eloquent
     }
 
     /**
+     * Returns the GedcomSources belonging to this GedcomFamily.
+     * @return Illuminate\Database\Eloquent\Collection
+     */
+    public function sources()
+    {
+        return $this->hasMany('GedcomSource', 'fami_id');
+    }
+
+    /**
      * Returns the children of this GedcomFamily.
      * @return Illuminate\Database\Eloquent\Collection
      */

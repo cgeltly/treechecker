@@ -58,6 +58,15 @@ class GedcomIndividual extends Eloquent
     }
 
     /**
+     * Returns the GedcomSources belonging to this GedcomIndividual.
+     * @return Illuminate\Database\Eloquent\Collection
+     */
+    public function sources()
+    {
+        return $this->hasMany('GedcomSource', 'indi_id');
+    }
+
+    /**
      * Returns the birth event for this GedcomIndividual.
      * @return GedcomEvent
      */
