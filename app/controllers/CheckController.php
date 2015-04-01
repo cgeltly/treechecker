@@ -333,7 +333,7 @@ class CheckController extends BaseController
             $error->type_specific = 'warn: >30';
             $error->eval_broad = 'warning';
             $error->eval_specific = '';
-            $error->message = sprintf('Marriage age difference of ' . $f->age . ' years for couple with '
+            $error->message = sprintf('Marriage age difference of ' . abs($f->age) . ' years for couple with '
                     . 'family ID ' . $f->gedcom_key .'.');
             $error->save();
         }
