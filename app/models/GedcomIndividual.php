@@ -65,6 +65,15 @@ class GedcomIndividual extends Eloquent
     {
         return $this->hasMany('GedcomSource', 'indi_id');
     }
+    
+    /**
+     * Returns the GedcomLifespan for this GedcomIndividual.
+     * @return GedcomLifespan
+     */
+    public function lifespan() 
+    {
+        return $this->hasOne('GedcomLifespan', 'indi_id'); 
+    }
 
     /**
      * Returns the birth event for this GedcomIndividual.

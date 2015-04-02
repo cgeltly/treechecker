@@ -261,7 +261,7 @@ class Gedcom extends Eloquent
     public function allLifespans()
     {
         return $this->lifespanJoins()
-                        ->select('i.id as indi_id', 'i.gedcom_id', $this->dateDiff('e1', 'lifespan'), $this->estDate('e1.estimate', 'e2.estimate', 'est_date'))
+                        ->select('i.id as indi_id', 'i.sex', 'e1.date as birth', 'e2.date as death', $this->dateDiff('e1', 'lifespan'), $this->estDate('e1.estimate', 'e2.estimate', 'est_date'))
                         ->get();
     }
 
