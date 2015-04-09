@@ -197,11 +197,13 @@ class CheckController extends BaseController
             $mother_age = new GedcomParentalAge();
             $mother_age->gedcom_id = $gedcom->id;
             $mother_age->fami_id = $i->fami_id;
-            $mother_age->par_id = $i->par_id;
+            $mother_age->pare_id = $i->pare_id;
             $mother_age->chil_id = $i->chil_id;
-            $mother_age->par_age = $i->par_age;
-            $mother_age->est_date = $i->est_date;
-            $mother_age->par_sex = 'f';
+            $mother_age->pare_sex = $i->pare_sex;
+            $mother_age->pare_birth = $i->pare_birth;
+            $mother_age->chil_birth = $i->chil_birth;
+            $mother_age->parental_age = $i->parental_age;
+            $mother_age->estimated = $i->estimated;
             $mother_age->save();
         }
 
@@ -210,11 +212,13 @@ class CheckController extends BaseController
             $father_age = new GedcomParentalAge();
             $father_age->gedcom_id = $gedcom->id;
             $father_age->fami_id = $i->fami_id;
-            $father_age->par_id = $i->par_id;
+            $father_age->pare_id = $i->pare_id;
             $father_age->chil_id = $i->chil_id;
-            $father_age->par_age = $i->par_age;
-            $father_age->est_date = $i->est_date;
-            $father_age->par_sex = 'm';
+            $father_age->pare_sex = $i->pare_sex;
+            $father_age->pare_birth = $i->pare_birth;
+            $father_age->chil_birth = $i->chil_birth;
+            $father_age->parental_age = $i->parental_age;
+            $father_age->estimated = $i->estimated;
             $father_age->save();
         }
     }

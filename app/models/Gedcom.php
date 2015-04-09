@@ -279,13 +279,15 @@ class Gedcom extends Eloquent
                         ->join('individuals as i', 'e1.indi_id', '=', 'i.id')
                         ->where('e1.event', 'BIRT')
                         ->where('e2.event', 'BIRT')
+                        ->whereNotNull('e1.date')
+                        ->whereNotNull('e2.date')
                         ->where('c.gedcom_id', $this->id);
     }
 
     public function parentalAges($parent)
     {
         return $this->parentalAgesJoins($parent)
-                        ->select('c.fami_id as fami_id', 'e1.indi_id as par_id', 'e2.indi_id as chil_id', $this->estDate('e1.estimate', 'e2.estimate', 'est_date'), $this->sqlAge('par_age'))
+                        ->select('c.fami_id as fami_id', 'i.id as pare_id', 'e2.indi_id as chil_id', 'i.sex as pare_sex', 'e1.date as pare_birth', 'e2.date as chil_birth', $this->sqlAge('parental_age'), $this->estDate('e1.estimate', 'e2.estimate', 'estimated'))
                         ->get();
     }
 
