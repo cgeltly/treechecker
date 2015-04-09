@@ -71,8 +71,8 @@ class CheckController extends BaseController
         $this->checkLifespan($gedcom);
         $this->checkParentalAge($gedcom);
 
-        // Check marriage age difference of families
-        $this->checkMarriageAgeDiff($gedcom);
+        // Check spousal age gaps
+        $this->checkSpousalAgeGaps($gedcom);
 
         // Check the chronology of event dates
         $this->checkEventDates($gedcom);
@@ -318,13 +318,12 @@ class CheckController extends BaseController
     }
 
     /**
-     * Checks the spousal age difference of GedcomFamilies, creates errors when (probably) incorrect.
-     * TODO: need to rename the method, because the marriage event is not queried
+     * Checks the spousal age gap of GedcomFamilies, creates errors when (probably) incorrect.
      * @param Gedcom $gedcom
      */
-    private function checkMarriageAgeDiff($gedcom)
+    private function checkSpousalAgeGaps($gedcom)
     {
-        foreach ($gedcom->marriageAgeDiffLargerThan(30) as $f)
+        foreach ($gedcom->spousalAgeGapLargerThan(30) as $f)
         {
             $error = new GedcomError();
             $error->gedcom_id = $gedcom->id;
@@ -333,7 +332,7 @@ class CheckController extends BaseController
             $error->type_specific = 'warn: >30';
             $error->eval_broad = 'warning';
             $error->eval_specific = '';
-            $error->message = sprintf('Marriage age difference of ' . abs($f->age) . ' years for couple with '
+            $error->message = sprintf('Spousal age gap of ' . abs($f->age) . ' years for couple with '
                     . 'family ID ' . $f->gedcom_key . '.');
             $error->save();
         }
