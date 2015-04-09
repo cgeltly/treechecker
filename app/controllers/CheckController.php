@@ -225,18 +225,17 @@ class CheckController extends BaseController
      */
     private function marriageAgeStats($gedcom)
     {
-
         foreach ($gedcom->marriageAges() as $i)
         {
             $marriage_age = new GedcomMarriageAge();
             $marriage_age->gedcom_id = $gedcom->id;
+            $marriage_age->indi_id = $i->indi_id;
+            $marriage_age->indi_sex = $i->indi_sex;
+            $marriage_age->indi_birth = $i->indi_birth;
             $marriage_age->fami_id = $i->fami_id;
-            $marriage_age->indi_id_husb = $i->indi_id_husb;
-            $marriage_age->indi_id_wife = $i->indi_id_wife;
-            $marriage_age->marr_age_husb = $i->marr_age_husb;
-            $marriage_age->marr_age_wife = $i->marr_age_wife;
-            $marriage_age->est_date_age_husb = $i->est_date_age_husb;
-            $marriage_age->est_date_age_wife = $i->est_date_age_wife;
+            $marriage_age->fami_marriage = $i->fami_marriage;
+            $marriage_age->marriage_age = $i->marriage_age;
+            $marriage_age->estimated = $i->estimated;
             $marriage_age->save();
         }
     }

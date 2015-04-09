@@ -19,20 +19,22 @@ class CreateMarriageAgesTable extends Migration
 
             $table->increments('id');
             $table->unsignedInteger('gedcom_id');
+            $table->unsignedInteger('indi_id');
+            $table->enum('indi_sex', array('m', 'f', 'u'));
+            $table->date('indi_birth');
             $table->unsignedInteger('fami_id');
-            $table->unsignedInteger('indi_id_husb')->nullable();
-            $table->unsignedInteger('indi_id_wife')->nullable();
-            $table->integer('marr_age_husb')->nullable();
-            $table->integer('marr_age_wife')->nullable();
-            $table->boolean('est_date_age_husb');
-            $table->boolean('est_date_age_wife');
+            $table->date('fami_marriage');
+            $table->integer('marriage_age');
+            $table->boolean('estimated');
 
             $table->timestamps();
 
-            $table->foreign('indi_id_husb')->references('id')->on('individuals')->onDelete('cascade');
-            $table->foreign('indi_id_wife')->references('id')->on('individuals')->onDelete('cascade');
+            $table->foreign('gedcom_id')->references('id')->on('gedcoms')->onDelete('cascade');
+            $table->foreign('indi_id')->references('id')->on('individuals')->onDelete('cascade');
             $table->foreign('fami_id')->references('id')->on('families')->onDelete('cascade');
             $table->index('gedcom_id');
+            $table->index('indi_id');
+            $table->index('fami_id');
         });
     }
 

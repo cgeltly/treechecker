@@ -304,30 +304,6 @@ class Gedcom extends Eloquent
     }
 
     /*
-     * Marriage age
-     */
-
-    public function marriageAgesJoins()
-    {
-        return DB::table('families as f')
-                        ->join('events as e2', 'e2.fami_id', '=', 'f.id')
-                        ->join('events as e1', 'f.indi_id_husb', '=', 'e1.indi_id')
-                        ->join('events as e0', 'f.indi_id_wife', '=', 'e0.indi_id')
-                        ->where('e2.event', 'MARR')
-                        ->where('e1.event', 'BIRT')
-                        ->where('e0.event', 'BIRT')
-                        ->whereRaw('((e1.date IS NOT NULL OR e0.date IS NOT NULL) AND e2.date IS NOT NULL) ')
-                        ->where('f.gedcom_id', $this->id);
-    }
-
-    public function marriageAges()
-    {
-        return $this->marriageAgesJoins()
-                        ->select('f.id as fami_id', 'e1.indi_id as indi_id_husb', 'e0.indi_id as indi_id_wife', $this->dateDiff('e1', 'marr_age_husb'), $this->dateDiff('e0', 'marr_age_wife'), $this->estDate('e1.estimate', 'e2.estimate', 'est_date_age_husb'), $this->estDate('e0.estimate', 'e2.estimate', 'est_date_age_wife'))
-                        ->get();
-    }
-
-    /*
      * Spousal age gap
      * TODO: rename functions, becuase no actual marriage event involved
      */
@@ -383,6 +359,13 @@ class Gedcom extends Eloquent
     public function minMarriageAge()
     {
         return $this->marriageAge()->min($this->sqlAge());
+    }
+
+    public function marriageAges()
+    {
+        return $this->marriageAge()
+                        ->select('i.id as indi_id', 'i.sex as indi_sex', 'e1.date as indi_birth', 'f.id as fami_id', 'e2.date as fami_marriage', $this->dateDiff('e1', 'marriage_age'), $this->estDate('e1.estimate', 'e2.estimate', 'estimated'))
+                        ->get();
     }
 
     /*
