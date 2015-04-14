@@ -120,7 +120,7 @@ class IndividualsController extends BaseController
         $user = Auth::user();
 
         $errors = GedcomError::leftJoin('gedcoms', 'gedcoms.id', '=', 'errors.gedcom_id')
-                ->select(array('errors.severity', 'errors.message'))
+                ->select(array('errors.type_broad', 'errors.eval_broad', 'errors.message'))
                 ->where('errors.indi_id', $id);
 
         if ($user->role != 'admin')

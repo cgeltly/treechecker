@@ -1,0 +1,61 @@
+0 HEAD
+1 SOUR Family Echo
+2 WWW http://www.familyecho.com/
+1 FILE My Family
+1 DATE 6 AUG 2014
+1 DEST ANSTFILE
+1 GEDC
+2 VERS 5.5.1
+2 FORM LINEAGE-LINKED
+1 SUBM @I1@
+2 NAME Martijn van der Klis
+1 CHAR UTF-8
+0 @I1@ INDI
+1 NAME John /Smith/
+2 GIVN John
+2 SURN Smith
+2 _MARNM Smith
+1 SEX M
+1 BIRT
+2 DATE 19 MAR 1950
+1 FAMC @F1@
+1 SOUR @S1@
+0 @I2@ INDI
+1 NAME William /Smith/
+2 GIVN William
+2 SURN Smith
+2 _MARNM Smith
+1 SEX M
+1 BIRT
+2 DATE 12 APR 1919
+1 FAMS @F1@
+0 @I3@ INDI
+1 NAME Elizabeth /Johnson/
+2 GIVN Elizabeth
+2 SURN Johnson
+2 _MARNM Smith
+1 SEX F
+1 BIRT
+2 DATE 7 FEB 1920
+1 DEAT Y
+2 DATE 15 JUL 1980
+2 SOUR @S3@
+1 FAMS @F1@
+1 SOUR @S5@
+0 @F1@ FAM
+1 HUSB @I2@
+1 WIFE @I3@
+1 CHIL @I1@
+1 SOUR @S2@
+1 MARR 
+2 DATE 17 MAY 1940
+1 _CURRENT Y
+0 @S1@ SOUR
+1 TITL This is a test source on an individual.
+0 @S2@ SOUR
+1 TITL This is a test source on a family.
+0 @S3@ SOUR
+1 TITL This is a test source on an event.
+0 @S4@ SOUR
+1 TITL This source has no references anywhere and should lead to a parse error.
+0 TRLR

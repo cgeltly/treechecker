@@ -99,7 +99,7 @@ class CheckController extends BaseController
         // Set the file as error checked
         $gedcom->error_checked = true;
         $gedcom->save();
-        
+
         // Redirect to the GEDCOM overview
         return Redirect::to('errors/gedcom/' . $gedcom_id);
     }
@@ -135,8 +135,8 @@ class CheckController extends BaseController
             $error->fami_id = $e->fami_id;
             $error->type_broad = 'chronology';
             $error->type_specific = 'events < 1000AD';
-            $error->eval_broad = 'warning';            
-            $error->eval_specific = '';            
+            $error->eval_broad = 'warning';
+            $error->eval_specific = '';
             $error->message = sprintf('Event prior to 1000AD, dated %s.', $e->date);
             $error->save();
         }
@@ -155,10 +155,10 @@ class CheckController extends BaseController
             $error->indi_id = $e->id;
             $error->type_broad = 'chronology';
             $error->type_specific = 'event before birth';
-            $error->eval_broad = 'error';            
+            $error->eval_broad = 'error';
             $error->eval_specific = '';
-            $error->message = sprintf('There is a ' .  $e->event . ' event before the BIRT event for '
-                    . $e->first_name . ' ' . $e->last_name . ' (' . $e->gedcom_key) . ').';
+            $error->message = sprintf('There is a ' . $e->event . ' event before the BIRT event for '
+                            . $e->first_name . ' ' . $e->last_name . ' (' . $e->gedcom_key) . ').';
             $error->save();
         }
     }
@@ -179,7 +179,7 @@ class CheckController extends BaseController
             $error->eval_broad = $i->age > 122 ? 'error' : 'warning';
             $error->eval_specific = '';
             $error->message = sprintf('Lifespan of ' . $i->age . ' years for ' .
-                    $i->first_name . ' ' . $i->last_name . ' (' . $i->gedcom_key . ').');            
+                    $i->first_name . ' ' . $i->last_name . ' (' . $i->gedcom_key . ').');
             $error->save();
         }
 
@@ -192,8 +192,8 @@ class CheckController extends BaseController
             $error->type_specific = 'err: <0';
             $error->eval_broad = 'error';
             $error->eval_specific = '';
-            $error->message = sprintf('Death of ' . $i->first_name . ' ' . 
-                    $i->last_name . '(' . $i->gedcom_key . ') occurs before birth: ' . $i->age . ' years.');             
+            $error->message = sprintf('Death of ' . $i->first_name . ' ' .
+                    $i->last_name . '(' . $i->gedcom_key . ') occurs before birth: ' . $i->age . ' years.');
             $error->save();
         }
     }
@@ -211,11 +211,11 @@ class CheckController extends BaseController
             $mother_age->gedcom_id = $gedcom->id;
             $mother_age->fami_id = $i->fami_id;
             $mother_age->par_id = $i->par_id;
-            $mother_age->chil_id = $i->chil_id;    
-            $mother_age->par_age = $i->par_age; 
-            $mother_age->est_date = $i->est_date; 
-            $mother_age->par_sex = 'f';  
-            $mother_age->save();         
+            $mother_age->chil_id = $i->chil_id;
+            $mother_age->par_age = $i->par_age;
+            $mother_age->est_date = $i->est_date;
+            $mother_age->par_sex = 'f';
+            $mother_age->save();
         }
 
         foreach ($gedcom->parentalAges('husb') as $i)
@@ -224,15 +224,14 @@ class CheckController extends BaseController
             $father_age->gedcom_id = $gedcom->id;
             $father_age->fami_id = $i->fami_id;
             $father_age->par_id = $i->par_id;
-            $father_age->chil_id = $i->chil_id;    
-            $father_age->par_age = $i->par_age; 
-            $father_age->est_date = $i->est_date; 
-            $father_age->par_sex = 'm';           
-            $father_age->save();         
+            $father_age->chil_id = $i->chil_id;
+            $father_age->par_age = $i->par_age;
+            $father_age->est_date = $i->est_date;
+            $father_age->par_sex = 'm';
+            $father_age->save();
         }
-
     }
-    
+
     /**
      * Calculates age of parents at birth of children.
      * @param Gedcom $gedcom
@@ -246,42 +245,41 @@ class CheckController extends BaseController
             $marriage_age->gedcom_id = $gedcom->id;
             $marriage_age->fami_id = $i->fami_id;
             $marriage_age->indi_id_husb = $i->indi_id_husb;
-            $marriage_age->indi_id_wife = $i->indi_id_wife;            
-            $marriage_age->marr_age_husb = $i->marr_age_husb;   
-            $marriage_age->marr_age_wife = $i->marr_age_wife;             
-            $marriage_age->est_date_age_husb = $i->est_date_age_husb; 
-            $marriage_age->est_date_age_wife = $i->est_date_age_wife; 
-            $marriage_age->save();         
+            $marriage_age->indi_id_wife = $i->indi_id_wife;
+            $marriage_age->marr_age_husb = $i->marr_age_husb;
+            $marriage_age->marr_age_wife = $i->marr_age_wife;
+            $marriage_age->est_date_age_husb = $i->est_date_age_husb;
+            $marriage_age->est_date_age_wife = $i->est_date_age_wife;
+            $marriage_age->save();
         }
-    } 
-    
-    
+    }
+
     /**
      * Calculates lifespan of individuals.
      * @param Gedcom $gedcom
      */
     private function lifespanStats($gedcom)
     {
-
         foreach ($gedcom->allLifespans() as $i)
         {
             $lifespan = new GedcomLifespan();
             $lifespan->gedcom_id = $gedcom->id;
-            $lifespan->indi_id = $i->indi_id;            
-            $lifespan->lifespan = $i->lifespan;             
-            $lifespan->est_date = $i->est_date; 
-            $lifespan->save();         
+            $lifespan->indi_id = $i->indi_id;
+            $lifespan->sex = $i->sex;
+            $lifespan->birth = $i->birth;
+            $lifespan->death = $i->death;
+            $lifespan->lifespan = $i->lifespan;
+            $lifespan->estimated = $i->est_date;
+            $lifespan->save();
         }
-    } 
-    
-        
+    }
+
     /**
      * Checks age of parents, creates errors when (probably) incorrect.
      * @param Gedcom $gedcom
      */
     private function checkParentalAge($gedcom)
-    {    
-        
+    {
         foreach ($gedcom->parentalAgeLargerThan('wife', 55) as $i)
         {
             $error = new GedcomError();
@@ -289,7 +287,7 @@ class CheckController extends BaseController
             $error->indi_id = $i->indi_id;
             $error->type_broad = 'parental age';
             $error->type_specific = 'warn: >55, err: >60';
-            $error->eval_broad = $i->age > 60 ? 'error' : 'warning';            
+            $error->eval_broad = $i->age > 60 ? 'error' : 'warning';
             $error->eval_specific = '';
             $error->message = sprintf('Maternal age of ' . $i->age . ' years for ' .
                     $i->par_fn . ' ' . $i->par_ln . ' (' . $i->gedcom_i_key . ').');
@@ -303,13 +301,13 @@ class CheckController extends BaseController
             $error->indi_id = $i->indi_id;
             $error->type_broad = 'parental age';
             $error->type_specific = 'warn: >80, err: >92';
-            $error->eval_broad = $i->age > 92 ? 'error' : 'warning';            
+            $error->eval_broad = $i->age > 92 ? 'error' : 'warning';
             $error->eval_specific = '';
             $error->message = sprintf('Paternal age of ' . $i->age . ' years for ' .
                     $i->par_fn . ' ' . $i->par_ln . ' (' . $i->gedcom_i_key . ').');
             $error->save();
-        }        
-    
+        }
+
 
         foreach (array('husb', 'wife') as $parent)
         {
@@ -323,12 +321,11 @@ class CheckController extends BaseController
                 $error->eval_broad = $i->age < 7 ? 'error' : 'warning';
                 $error->eval_specific = '';
                 $error->message = sprintf('Parental age of ' . $i->age . ' years for ' .
-                    $i->par_fn . ' ' . $i->par_ln . ' (' . $i->gedcom_i_key . ').');
+                        $i->par_fn . ' ' . $i->par_ln . ' (' . $i->gedcom_i_key . ').');
                 $error->save();
             }
         }
     }
- 
 
     /**
      * Checks the spousal age difference of GedcomFamilies, creates errors when (probably) incorrect.
@@ -346,8 +343,8 @@ class CheckController extends BaseController
             $error->type_specific = 'warn: >30';
             $error->eval_broad = 'warning';
             $error->eval_specific = '';
-            $error->message = sprintf('Marriage age difference of ' . $f->age . ' years for couple with '
-                    . 'family ID ' . $f->gedcom_key .'.');
+            $error->message = sprintf('Marriage age difference of ' . abs($f->age) . ' years for couple with '
+                    . 'family ID ' . $f->gedcom_key . '.');
             $error->save();
         }
     }

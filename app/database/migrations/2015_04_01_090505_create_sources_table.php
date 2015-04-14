@@ -3,7 +3,7 @@
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class CreateNotesTable extends Migration
+class CreateSourcesTable extends Migration
 {
 
     /**
@@ -13,17 +13,18 @@ class CreateNotesTable extends Migration
      */
     public function up()
     {
-        Schema::create('notes', function(Blueprint $table)
+        Schema::create('sources', function(Blueprint $table)
         {
             $table->engine = 'InnoDB';
-
+            
             $table->increments('id');
             $table->unsignedInteger('gedcom_id');
-            $table->string('gedcom_key')->nullable();
-            $table->text('note');
+            $table->string('gedcom_key');
+            $table->string('title');
             $table->unsignedInteger('fami_id')->nullable();
             $table->unsignedInteger('indi_id')->nullable();
             $table->unsignedInteger('even_id')->nullable();
+            $table->unsignedInteger('note_id')->nullable();
             $table->text('gedcom');
             $table->timestamps();
 
@@ -31,10 +32,12 @@ class CreateNotesTable extends Migration
             $table->foreign('fami_id')->references('id')->on('families')->onDelete('cascade');
             $table->foreign('indi_id')->references('id')->on('individuals')->onDelete('cascade');
             $table->foreign('even_id')->references('id')->on('events')->onDelete('cascade');
+            $table->foreign('note_id')->references('id')->on('events')->onDelete('cascade');
             $table->index('gedcom_id');
             $table->index('fami_id');
             $table->index('indi_id');
             $table->index('even_id');
+            $table->index('note_id');
         });
     }
 
@@ -45,7 +48,7 @@ class CreateNotesTable extends Migration
      */
     public function down()
     {
-        Schema::drop('notes');
+        Schema::drop('sources');
     }
 
 }

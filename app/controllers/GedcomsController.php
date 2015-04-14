@@ -55,24 +55,23 @@ class GedcomsController extends BaseController
     /*
      * Show a list of all unparsed gedcoms.
      */
-    public function getUnchecked() 
+
+    public function getUnchecked()
     {
         Session::forget('progress');
         $this->layout->content = View::make('gedcom/gedcoms/unchecked');
-    }    
-    
+    }
+
     /**
      * Shows a single GEDCOM file, with some statistics. 
      * @param int $id the Gedcom ID
      */
     public function getShow($id)
     {
-
         $gedcom = Gedcom::findOrFail($id);
 
         if ($this->allowedAccess($gedcom->user_id))
         {
-
             if (!$gedcom->parsed)
             {
                 // TODO: this is a bit too much of course
@@ -125,9 +124,10 @@ class GedcomsController extends BaseController
                 'avg_age' => number_format($gedcom->avg_lifespan(), 2),
                 'max_age' => $gedcom->max_lifespan(),
                 'min_age' => $gedcom->min_lifespan(),
-//                'avg_marriage_age' => number_format($gedcom->avgMarriageAge(), 2),
-//                'max_marriage_age' => $gedcom->maxMarriageAge(),
-//                'min_marriage_age' => $gedcom->minMarriageAge(),
+                // TODO: recalculate marriage age based on marriage_ages table
+                'avg_marriage_age' => 0, //number_format($gedcom->avgMarriageAge(), 2),               
+                'max_marriage_age' => 0, //$gedcom->maxMarriageAge(),
+                'min_marriage_age' => 0, //$gedcom->minMarriageAge(),
                 'all_fami' => $fam_count,
                 'fams_with_children' => sprintf('%d (%.2f%%)', $num_fams_with_children, $this->percentage($num_fams_with_children, $fam_count)),
                 'avg_fam_size' => $avg_fam_size,
@@ -368,7 +368,7 @@ class GedcomsController extends BaseController
     public function getUncheckeddata()
     {
         $user = Auth::user();
-        
+
         $gedcoms = Gedcom::select(array('file_name', 'tree_name', 'source', 'notes', 'error_checked', 'id'));
         $gedcoms->where('error_checked', 0);
         if ($user->role != 'admin')
@@ -384,10 +384,7 @@ class GedcomsController extends BaseController
                         ->remove_column('id')
                         ->make();
     }
-    
-    
-    
-    
+
     /**
      * Show a list of all the GedcomIndividuals formatted for Datatables.
      * @return Datatables JSON

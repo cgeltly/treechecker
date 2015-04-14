@@ -54,10 +54,12 @@
                     <th>@lang('common/common.sex')</th>
                     <td>{{{ $individual->sex }}}</td>
                 </tr>
+                @if ($individual->age())
                 <tr>
                     <th>@lang('gedcom/individuals/table.age_death')</th>
                     <td>{{{ $individual->age() }}}</td>
                 </tr>
+                @endif
             </table>
         </div>
         <div class="tab-pane" id="ancestors">
@@ -82,7 +84,8 @@
             <table id="individual_errors" class="table table-striped table-hover">
                 <thead>
                     <tr>
-                        <th>@lang('gedcom/errors/table.severity')</th>
+                        <th>@lang('gedcom/errors/table.type_broad')</th>
+                        <th>@lang('gedcom/errors/table.eval_broad')</th>
                         <th>@lang('gedcom/errors/table.error')</th>
                     </tr>
                 </thead>

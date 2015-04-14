@@ -18,6 +18,9 @@ class GedcomIndividualTest extends TestCase
         $this->assertEquals($ind->first_name, 'Max');
         $this->assertEquals($ind->last_name, 'Mustermann');
         $this->assertEquals($ind->sex, 'm');
+        
+        // I1 has a BIRT and an ADOP event
+        $this->assertEquals($ind->events()->count(), 2);
         $this->assertNotEmpty($ind->birth());
         $this->assertEquals($ind->birth()->date, '1898-10-15');
         $this->assertEmpty($ind->death());
