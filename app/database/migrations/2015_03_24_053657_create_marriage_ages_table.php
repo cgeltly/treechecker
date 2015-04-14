@@ -26,7 +26,6 @@ class CreateMarriageAgesTable extends Migration
             $table->date('fami_marriage');
             $table->integer('marriage_age');
             $table->boolean('estimated');
-
             $table->timestamps();
 
             $table->foreign('gedcom_id')->references('id')->on('gedcoms')->onDelete('cascade');

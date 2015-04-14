@@ -39,30 +39,40 @@ class CheckController extends BaseController
      */
     public function getStart($gedcom_id)
     {
-
-        // First, populate the parental and marriage age tables
         $gedcom = Gedcom::findOrFail($gedcom_id);
 
-        // Delete existing stats in table
+        // Delete existing stats in stat tables
         $gedcom->parental_ages()->delete();
         $gedcom->marriage_ages()->delete();
         $gedcom->lifespans()->delete();
 
+        // Delete existing errors from error check phase
+        $gedcom->errors()->where('stage', 'error_check')->delete();
+
+        // Populate the stat tables        
         // Disable query log for parsing large files; begin transaction
         DB::connection()->disableQueryLog();
         DB::beginTransaction();
 
         $this->parentalAgeStats($gedcom);
-        $this->marriageAgeStats($gedcom);
-        $this->lifespanStats($gedcom);
 
-        // End the transaction
         DB::commit();
 
-        // Second, populate the errors table        
-        // Delete existing errors from error check phase
-        $gedcom->errors()->where('stage', 'error_check')->delete();
+        DB::connection()->disableQueryLog();
+        DB::beginTransaction();
 
+        $this->marriageAgeStats($gedcom);
+
+        DB::commit();
+
+        DB::connection()->disableQueryLog();
+        DB::beginTransaction();
+
+        $this->lifespanStats($gedcom);
+
+        DB::commit();
+
+        // Populate the errors table        
         // Query log is save in memory, so need to disable it for large file parsing
         DB::connection()->disableQueryLog();
         DB::beginTransaction();
