@@ -137,6 +137,15 @@ class Gedcom extends Eloquent
     }
 
     /**
+     * Returns the GedcomSystem belonging to this Gedcom.
+     * @return Illuminate\Database\Eloquent\Collection
+     */
+    public function system()
+    {
+        return $this->hasOne('GedcomSystem', 'gedcom_id');
+    }
+
+    /**
      * Returns the GedcomChildren belonging to this Gedcom through the GedcomFamilies.
      * @return Illuminate\Database\Eloquent\Collection
      */

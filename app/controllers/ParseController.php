@@ -234,6 +234,9 @@ class ParseController extends BaseController
 
         switch ($type)
         {
+            case 'HEAD':
+                $this->processHeader($xref, $gedrec, $gedcom_id);
+                break;
             case 'INDI':
                 $this->processIndividual($xref, $gedrec, $gedcom_id);
                 break;
@@ -252,6 +255,33 @@ class ParseController extends BaseController
             default:
                 break;
         }
+    }
+
+    /**
+     * Creates a GedcomSystem. 
+     * @param string $xref
+     * @param string $gedrec
+     * @param int $gedcom_id
+     */
+    private function processHeader($xref, $gedrec, $gedcom_id)
+    {
+        $record = new WT_GedcomRecord($xref, $gedrec, null, $gedcom_id);
+        $source = $record->getFacts('SOUR')[0]->getGedcom();
+
+        $system = new GedcomSystem();
+        $system->gedcom_id = $gedcom_id;
+        $system->system_id = $this->matchTag($source, 'SOUR');
+        $system->version_number = $this->matchTag($source, 'VERS');
+        $system->product_name = $this->matchTag($source, 'NAME');
+        $system->corporation = $this->matchTag($source, 'CORP');
+        $system->gedcom = $gedrec;
+        $system->save();
+    }
+    
+    private function matchTag($source, $tag) 
+    {
+        preg_match('/\d ' . $tag . ' (.*)/', $source, $matches);
+        return $matches ? $matches[1] : NULL;
     }
 
     /**
@@ -409,7 +439,7 @@ class ParseController extends BaseController
      * @param int $gedcom_id
      */
     private function processSource($xref, $gedrec, $gedcom_id)
-    {        
+    {
         // Find the Source in the sourceMap 
         if (array_key_exists($xref, $this->sourceMap))
         {
@@ -875,13 +905,13 @@ class ParseController extends BaseController
      * @param int $fami_id
      */
     private function addSource($fact, $indi_id, $fami_id)
-    {        
+    {
         // Create a reference for later lookup
         $ref = $indi_id ? ('I' . $indi_id) : ('F' . $fami_id);
         $key = trim($fact->getValue(), '@');
         $this->sourceMap[$key] = $ref;
     }
-    
+
     /**
      * Parses referenced sources on an event.
      * @param WT_Fact $fact

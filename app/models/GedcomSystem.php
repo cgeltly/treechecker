@@ -21,17 +21,17 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class GedcomSource extends Eloquent
+class GedcomSystem extends Eloquent
 {
 
     /**
      * The database table used by the model.
      * @var string
      */
-    protected $table = 'sources';
+    protected $table = 'systems';
 
     /**
-     * Returns the Gedcom to which this GedcomSource belongs.
+     * Returns the Gedcom to which this GedccomSystem belongs.
      * @return Gedcom
      */
     public function gc()

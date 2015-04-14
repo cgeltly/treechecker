@@ -3,13 +3,17 @@
     <h3>
         @lang('gedcom/gedcoms/title.file_stats')
     </h3>
-</div>    
+</div>
+
+<div class="alert alert-info" role="alert">
+    Showing statistics for <em>{{{ $gedcom->file_name }}}</em>, 
+    created by {{{ $gedcom->system->product_name }}} ({{{ $gedcom->system->version_number }}})
+    @if($gedcom->system->corporation)
+    , {{{ $gedcom->system->corporation }}}
+    @endif
+</div>
 
 <table class="table table-striped">
-    <tr>
-        <th>@lang('gedcom/gedcoms/table.file_name')</th>
-        <td>{{{ $gedcom->file_name }}}</td>
-    </tr>
     <tr>
         <th>@lang('gedcom/individuals/table.individuals')</th>
         <td>{{{ $statistics['all_ind'] }}} ({{ HTML::link('gedcoms/individuals/' . $gedcom->id, 'show') }})</td>
@@ -62,7 +66,7 @@
         <th>Families with children</th>
         <td>{{{ $statistics['fams_with_children'] }}} </td>
     </tr>
-        <tr>
+    <tr>
         <th>Average number of children per family</th>
         <td>{{{ $statistics['avg_fam_size'] }}} 
             (Largest family: {{{ $statistics['max_fam_size'] }}} children)</td>

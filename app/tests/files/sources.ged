@@ -1,15 +1,18 @@
 0 HEAD
-1 SOUR Family Echo
-2 WWW http://www.familyecho.com/
-1 FILE My Family
-1 DATE 6 AUG 2014
-1 DEST ANSTFILE
-1 GEDC
-2 VERS 5.5.1
-2 FORM LINEAGE-LINKED
+1 SOUR FTW
+2 VERS 5.00
+2 NAME Family Tree Maker for Windows
+2 CORP Broderbund Software, Banner Blue Division
+3 ADDR 39500 Stevenson Pl.  #204
+4 CONT Fremont, CA 95439
+3 PHON (510) 794-6850
+1 DEST FTM
+1 DATE 10 SEP 1998
+1 CHAR IBMPC
 1 SUBM @I1@
-2 NAME Martijn van der Klis
-1 CHAR UTF-8
+1 FILE sources.ged
+1 GEDC
+2 VERS 5.5
 0 @I1@ INDI
 1 NAME John /Smith/
 2 GIVN John
