@@ -23,7 +23,7 @@ class CreateParentalAgesTable extends Migration
             $table->unsignedInteger('par_id')->nullable();
             $table->unsignedInteger('chil_id')->nullable();
             $table->unsignedInteger('par_age')->nullable();
-            $table->enum('est_date', array('0', '1'));
+            $table->boolean('est_date')->nullable();
             $table->enum('par_sex', array('m', 'f'));
             
             

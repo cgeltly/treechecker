@@ -21,7 +21,7 @@ class CreateLifespansTable extends Migration
             $table->unsignedInteger('gedcom_id');
             $table->unsignedInteger('indi_id')->nullable();            
             $table->unsignedInteger('lifespan')->nullable();
-            $table->enum('est_date', array('0', '1'));
+            $table->boolean('est_date')->nullable();
             
             $table->timestamps();
             

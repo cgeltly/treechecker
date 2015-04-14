@@ -24,8 +24,8 @@ class CreateMarriageAgesTable extends Migration
             $table->unsignedInteger('indi_id_wife')->nullable();
             $table->unsignedInteger('marr_age_husb')->nullable();
             $table->unsignedInteger('marr_age_wife')->nullable();
-            $table->enum('est_date_age_husb', array('0', '1'));
-            $table->enum('est_date_age_wife', array('0', '1'));            
+            $table->boolean('est_date_age_husb')->nullable();
+            $table->boolean('est_date_age_wife')->nullable();            
             
             $table->timestamps();
             
