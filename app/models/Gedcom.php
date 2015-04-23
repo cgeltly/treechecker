@@ -261,7 +261,7 @@ class Gedcom extends Eloquent
     public function allLifespans()
     {
         return $this->lifespanJoins()
-                        ->select('i.id as indi_id', 'i.sex', 'e1.date as birth', 'e2.date as death', $this->dateDiff('e1', 'lifespan'), $this->estDate('e1.estimate', 'e2.estimate', 'est_date'))
+                        ->select('i.id as indi_id', 'i.sex', 'e1.date as birth', 'e2.date as death', $this->dateDiff('e1', 'lifespan'), $this->estDate('e1.est_date', 'e2.est_date', 'est_date'))
                         ->get();
     }
 
@@ -285,7 +285,7 @@ class Gedcom extends Eloquent
     public function parentalAges($parent)
     {
         return $this->parentalAgesJoins($parent)
-                        ->select('c.fami_id as fami_id', 'e1.indi_id as par_id', 'e2.indi_id as chil_id', $this->estDate('e1.estimate', 'e2.estimate', 'est_date'), $this->sqlAge('par_age'))
+                        ->select('c.fami_id as fami_id', 'e1.indi_id as par_id', 'e2.indi_id as chil_id', $this->estDate('e1.est_date', 'e2.est_date', 'est_date'), $this->sqlAge('par_age'))
                         ->get();
     }
 
@@ -310,7 +310,9 @@ class Gedcom extends Eloquent
     public function marriageAgesJoins()
     {
         return DB::table('families as f')
-                        ->join('events as e2', 'e2.fami_id', '=', 'f.id')
+                        ->join(DB::raw('(SELECT fami_id, date, est_date, event, MIN(YEAR(date)) MinDate
+                                FROM events WHERE event = "MARR" AND gedcom_id = ' . $this->id . ' ' . 
+                                'GROUP BY event, fami_id) AS e2'), 'f.id', '=', 'e2.fami_id')
                         ->join('events as e1', 'f.indi_id_husb', '=', 'e1.indi_id')
                         ->join('events as e0', 'f.indi_id_wife', '=', 'e0.indi_id')
                         ->where('e2.event', 'MARR')
@@ -323,13 +325,16 @@ class Gedcom extends Eloquent
     public function marriageAges()
     {
         return $this->marriageAgesJoins()
-                        ->select('f.id as fami_id', 'e1.indi_id as indi_id_husb', 'e0.indi_id as indi_id_wife', $this->dateDiff('e1', 'marr_age_husb'), $this->dateDiff('e0', 'marr_age_wife'), $this->estDate('e1.estimate', 'e2.estimate', 'est_date_age_husb'), $this->estDate('e0.estimate', 'e2.estimate', 'est_date_age_wife'))
+                        ->select('f.id as fami_id', 'e1.indi_id as indi_id_husb', 'e0.indi_id as indi_id_wife', 
+                                $this->dateDiff('e1', 'marr_age_husb'), $this->dateDiff('e0', 'marr_age_wife'), 
+                                $this->estDate('e1.est_date', 'e2.est_date', 'est_date_age_husb'), 
+                                $this->estDate('e0.est_date', 'e2.est_date', 'est_date_age_wife'))
                         ->get();
     }
 
     /*
      * Spousal age gap
-     * TODO: rename functions, becuase no actual marriage event involved
+     * TODO: rename functions, because no actual marriage event involved
      */
 
     public function marriageAgeDiff()
@@ -417,13 +422,13 @@ class Gedcom extends Eloquent
 
     /**
      * Check if either of two dates is estimated
-     * @param $estimate1 and $estimate2 as SQL alias to events.estimate for each date
+     * @param $est_date1 and $est_date2 as SQL alias to events.est_date for each date
      * @param string $as possible alias for this column
      * @return boolean
      */
-    private function estDate($estimate1, $estimate2, $as = NULL)
+    private function estDate($est_date1, $est_date2, $as = NULL)
     {
-        return DB::raw('IF(' . $estimate1 . '+' . $estimate2 . '= 0, 0, 1)'
+        return DB::raw('IF(' . $est_date1 . '+' . $est_date2 . '= 0, 0, 1)'
                         . ($as ? ' AS ' . $as : ''));
     }
 

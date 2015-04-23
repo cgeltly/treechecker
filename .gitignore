@@ -7,5 +7,6 @@ composer.lock
 .DS_Store
 Thumbs.db
 
+/wiki
 /app/storage/debugbar
 /nbproject

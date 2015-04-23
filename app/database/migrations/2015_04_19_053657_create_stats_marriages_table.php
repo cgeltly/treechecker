@@ -3,7 +3,7 @@
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class CreateMarriageAgesTable extends Migration
+class CreateStatsMarriagesTable extends Migration
 {
 
     /**
@@ -13,12 +13,13 @@ class CreateMarriageAgesTable extends Migration
      */
     public function up()
     {
-        Schema::create('marriage_ages', function(Blueprint $table)
+        Schema::create('stats_marriages', function(Blueprint $table)
         {
             $table->engine = 'InnoDB';
 
             $table->increments('id');
             $table->unsignedInteger('gedcom_id');
+            $table->unsignedInteger('marr_event_id');           
             $table->unsignedInteger('fami_id');
             $table->unsignedInteger('indi_id_husb')->nullable();
             $table->unsignedInteger('indi_id_wife')->nullable();
@@ -32,6 +33,7 @@ class CreateMarriageAgesTable extends Migration
             $table->foreign('indi_id_husb')->references('id')->on('individuals')->onDelete('cascade');
             $table->foreign('indi_id_wife')->references('id')->on('individuals')->onDelete('cascade');
             $table->foreign('fami_id')->references('id')->on('families')->onDelete('cascade');
+            $table->foreign('marr_event_id')->references('id')->on('events')->onDelete('cascade');            
             $table->index('gedcom_id');
         });
     }
@@ -43,7 +45,7 @@ class CreateMarriageAgesTable extends Migration
      */
     public function down()
     {
-        Schema::drop('marriage_ages');
+        Schema::drop('stats_marriages');
     }
 
 }

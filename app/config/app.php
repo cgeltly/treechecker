@@ -123,8 +123,8 @@ return array(
 		'Illuminate\Workbench\WorkbenchServiceProvider',
             
                 'Bllim\Datatables\DatatablesServiceProvider', // Datatables
-                'Barryvdh\LaravelIdeHelper\IdeHelperServiceProvider', // IDE Helpers
-                'Barryvdh\Debugbar\ServiceProvider', // Debugbar
+//                'Barryvdh\LaravelIdeHelper\IdeHelperServiceProvider', // IDE Helpers
+//                'Barryvdh\Debugbar\ServiceProvider', // Debugbar
 	),
 
 	/*
@@ -193,7 +193,7 @@ return array(
 		'View'            => 'Illuminate\Support\Facades\View',
             
                 'Datatables'      => 'Bllim\Datatables\Datatables', // DataTables
-                'Debugbar'        => 'Barryvdh\Debugbar\Facade', // Debugbar
+//                'Debugbar'        => 'Barryvdh\Debugbar\Facade', // Debugbar
 
 	),
     
