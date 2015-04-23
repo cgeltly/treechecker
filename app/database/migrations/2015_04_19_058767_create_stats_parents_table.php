@@ -30,11 +30,12 @@ class CreateStatsParentsTable extends Migration
 
             $table->timestamps();
 
-            $table->foreign('chil_id')->references('id')->on('individuals')->onDelete('cascade');
-            $table->foreign('par_id')->references('id')->on('individuals')->onDelete('cascade');
+            $table->foreign('gedcom_id')->references('id')->on('gedcoms')->onDelete('cascade');
             $table->foreign('fami_id')->references('id')->on('families')->onDelete('cascade');
             $table->foreign('par_birth_event_id')->references('id')->on('events')->onDelete('cascade');
-            $table->foreign('chil_birth_event_id')->references('id')->on('events')->onDelete('cascade');            
+            $table->foreign('chil_birth_event_id')->references('id')->on('events')->onDelete('cascade');
+            $table->foreign('par_id')->references('id')->on('individuals')->onDelete('cascade');
+            $table->foreign('chil_id')->references('id')->on('individuals')->onDelete('cascade');
         });
     }
 

@@ -137,6 +137,15 @@ class Gedcom extends Eloquent
     }
 
     /**
+     * Returns the GedcomSystem belonging to this Gedcom.
+     * @return Illuminate\Database\Eloquent\Collection
+     */
+    public function system()
+    {
+        return $this->hasOne('GedcomSystem', 'gedcom_id');
+    }
+
+    /**
      * Returns the GedcomChildren belonging to this Gedcom through the GedcomFamilies.
      * @return Illuminate\Database\Eloquent\Collection
      */
@@ -279,13 +288,15 @@ class Gedcom extends Eloquent
                         ->join('individuals as i', 'e1.indi_id', '=', 'i.id')
                         ->where('e1.event', 'BIRT')
                         ->where('e2.event', 'BIRT')
+                        ->whereNotNull('e1.date')
+                        ->whereNotNull('e2.date')
                         ->where('c.gedcom_id', $this->id);
     }
 
     public function parentalAges($parent)
     {
         return $this->parentalAgesJoins($parent)
-                        ->select('c.fami_id as fami_id', 'e1.indi_id as par_id', 'e2.indi_id as chil_id', $this->estDate('e1.est_date', 'e2.est_date', 'est_date'), $this->sqlAge('par_age'))
+                        ->select('c.fami_id as fami_id', 'i.id as pare_id', 'e2.indi_id as chil_id', 'i.sex as pare_sex', 'e1.date as pare_birth', 'e2.date as chil_birth', $this->sqlAge('parental_age'), $this->estDate('e1.estimate', 'e2.estimate', 'estimated'))
                         ->get();
     }
 
@@ -334,10 +345,9 @@ class Gedcom extends Eloquent
 
     /*
      * Spousal age gap
-     * TODO: rename functions, because no actual marriage event involved
      */
 
-    public function marriageAgeDiff()
+    public function spousalAgeGap()
     {
         return DB::table('families as f')
                         ->join('events as e1', 'e1.indi_id', '=', 'f.indi_id_husb')
@@ -347,9 +357,9 @@ class Gedcom extends Eloquent
                         ->where('f.gedcom_id', $this->id);
     }
 
-    public function marriageAgeDiffLargerThan($age)
+    public function spousalAgeGapLargerThan($age)
     {
-        return $this->marriageAgeDiff()
+        return $this->spousalAgeGap()
                         ->select('f.id', 'f.gedcom_key', $this->sqlAge('age'))
                         ->havingRaw('ABS(age) >= ?', array($age))
                         ->get();
@@ -388,6 +398,13 @@ class Gedcom extends Eloquent
     public function minMarriageAge()
     {
         return $this->marriageAge()->min($this->sqlAge());
+    }
+
+    public function marriageAges()
+    {
+        return $this->marriageAge()
+                        ->select('i.id as indi_id', 'i.sex as indi_sex', 'e1.date as indi_birth', 'f.id as fami_id', 'e2.date as fami_marriage', $this->dateDiff('e1', 'marriage_age'), $this->estDate('e1.estimate', 'e2.estimate', 'estimated'))
+                        ->get();
     }
 
     /*

@@ -39,15 +39,13 @@ class CheckController extends BaseController
      */
     public function getStart($gedcom_id)
     {
-
-
         $gedcom = Gedcom::findOrFail($gedcom_id);
-    
+
         // Delete existing stats in stat tables
         $gedcom->parental_ages()->delete();
-        $gedcom->marriage_ages()->delete();        
+        $gedcom->marriage_ages()->delete();
         $gedcom->lifespans()->delete();
-        
+
         // Delete existing errors from error check phase
         $gedcom->errors()->where('stage', 'error_check')->delete();
 
@@ -57,25 +55,24 @@ class CheckController extends BaseController
         DB::beginTransaction();
 
         $this->parentalAgeStats($gedcom);
-        
+
         DB::commit();
-        
+
         DB::connection()->disableQueryLog();
         DB::beginTransaction();
-        
+
         $this->marriageAgeStats($gedcom);
-        
+
         DB::commit();
-        
+
         DB::connection()->disableQueryLog();
         DB::beginTransaction();
-        
-        $this->lifespanStats($gedcom);          
+
+        $this->lifespanStats($gedcom);
 
         DB::commit();
-        
-        // Populate the errors table        
 
+        // Populate the errors table        
         // Query log is save in memory, so need to disable it for large file parsing
         DB::connection()->disableQueryLog();
         DB::beginTransaction();
@@ -84,8 +81,8 @@ class CheckController extends BaseController
         $this->checkLifespan($gedcom);
         $this->checkParentalAge($gedcom);
 
-        // Check marriage age difference of families
-        $this->checkMarriageAgeDiff($gedcom);
+        // Check spousal age gaps
+        $this->checkSpousalAgeGaps($gedcom);
 
         // Check the chronology of event dates
         $this->checkEventDates($gedcom);
@@ -210,11 +207,13 @@ class CheckController extends BaseController
             $mother_age = new GedcomParentalAge();
             $mother_age->gedcom_id = $gedcom->id;
             $mother_age->fami_id = $i->fami_id;
-            $mother_age->par_id = $i->par_id;
+            $mother_age->pare_id = $i->pare_id;
             $mother_age->chil_id = $i->chil_id;
-            $mother_age->par_age = $i->par_age;
-            $mother_age->est_date = $i->est_date;
-            $mother_age->par_sex = 'f';
+            $mother_age->pare_sex = $i->pare_sex;
+            $mother_age->pare_birth = $i->pare_birth;
+            $mother_age->chil_birth = $i->chil_birth;
+            $mother_age->parental_age = $i->parental_age;
+            $mother_age->estimated = $i->estimated;
             $mother_age->save();
         }
 
@@ -223,11 +222,13 @@ class CheckController extends BaseController
             $father_age = new GedcomParentalAge();
             $father_age->gedcom_id = $gedcom->id;
             $father_age->fami_id = $i->fami_id;
-            $father_age->par_id = $i->par_id;
+            $father_age->pare_id = $i->pare_id;
             $father_age->chil_id = $i->chil_id;
-            $father_age->par_age = $i->par_age;
-            $father_age->est_date = $i->est_date;
-            $father_age->par_sex = 'm';
+            $father_age->pare_sex = $i->pare_sex;
+            $father_age->pare_birth = $i->pare_birth;
+            $father_age->chil_birth = $i->chil_birth;
+            $father_age->parental_age = $i->parental_age;
+            $father_age->estimated = $i->estimated;
             $father_age->save();
         }
     }
@@ -238,18 +239,17 @@ class CheckController extends BaseController
      */
     private function marriageAgeStats($gedcom)
     {
-
         foreach ($gedcom->marriageAges() as $i)
         {
             $marriage_age = new GedcomMarriageAge();
             $marriage_age->gedcom_id = $gedcom->id;
+            $marriage_age->indi_id = $i->indi_id;
+            $marriage_age->indi_sex = $i->indi_sex;
+            $marriage_age->indi_birth = $i->indi_birth;
             $marriage_age->fami_id = $i->fami_id;
-            $marriage_age->indi_id_husb = $i->indi_id_husb;
-            $marriage_age->indi_id_wife = $i->indi_id_wife;
-            $marriage_age->marr_age_husb = $i->marr_age_husb;
-            $marriage_age->marr_age_wife = $i->marr_age_wife;
-            $marriage_age->est_date_age_husb = $i->est_date_age_husb;
-            $marriage_age->est_date_age_wife = $i->est_date_age_wife;
+            $marriage_age->fami_marriage = $i->fami_marriage;
+            $marriage_age->marriage_age = $i->marriage_age;
+            $marriage_age->estimated = $i->estimated;
             $marriage_age->save();
         }
     }
@@ -328,13 +328,12 @@ class CheckController extends BaseController
     }
 
     /**
-     * Checks the spousal age difference of GedcomFamilies, creates errors when (probably) incorrect.
-     * TODO: need to rename the method, because the marriage event is not queried
+     * Checks the spousal age gap of GedcomFamilies, creates errors when (probably) incorrect.
      * @param Gedcom $gedcom
      */
-    private function checkMarriageAgeDiff($gedcom)
+    private function checkSpousalAgeGaps($gedcom)
     {
-        foreach ($gedcom->marriageAgeDiffLargerThan(30) as $f)
+        foreach ($gedcom->spousalAgeGapLargerThan(30) as $f)
         {
             $error = new GedcomError();
             $error->gedcom_id = $gedcom->id;
@@ -343,7 +342,7 @@ class CheckController extends BaseController
             $error->type_specific = 'warn: >30';
             $error->eval_broad = 'warning';
             $error->eval_specific = '';
-            $error->message = sprintf('Marriage age difference of ' . abs($f->age) . ' years for couple with '
+            $error->message = sprintf('Spousal age gap of ' . abs($f->age) . ' years for couple with '
                     . 'family ID ' . $f->gedcom_key . '.');
             $error->save();
         }
