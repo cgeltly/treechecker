@@ -23,7 +23,7 @@ class CreateEventsTable extends Migration
             $table->unsignedInteger('fami_id')->nullable();
             $table->string('event');
             $table->date('date')->nullable();
-            $table->boolean('estimate')->nullable();
+            $table->boolean('est_date')->nullable();
             $table->string('datestring')->nullable();
             $table->string('place')->nullable();
             $table->double('lati')->nullable();

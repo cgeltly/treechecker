@@ -21,14 +21,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-class GedcomMarriageAge extends Eloquent
+class GedcomStatsParents extends Eloquent
 {
 
     /**
      * The database table used by the model.
      * @var string
      */
-    protected $table = 'marriage_ages';
+    protected $table = 'parental_ages';
 
     /**
      * Returns the Gedcom to which this GedcomStatistic belongs.

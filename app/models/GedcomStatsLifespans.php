@@ -21,14 +21,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-class GedcomParentalAge extends Eloquent
+class GedcomStatsLifespans extends Eloquent
 {
 
     /**
      * The database table used by the model.
      * @var string
      */
-    protected $table = 'parental_ages';
+    protected $table = 'stats_lifespans';
 
     /**
      * Returns the Gedcom to which this GedcomStatistic belongs.
@@ -46,15 +46,6 @@ class GedcomParentalAge extends Eloquent
     public function individual()
     {
         return $this->belongsTo('GedcomIndividual', 'indi_id');
-    }
-
-    /**
-     * Returns the GedcomFamily to which this GedcomStatistic belongs.
-     * @return GedcomFamily
-     */
-    public function family()
-    {
-        return $this->belongsTo('GedcomFamily', 'fami_id');
     }
     
 }
