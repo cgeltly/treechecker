@@ -16,7 +16,7 @@ class CreateErrorsTable extends Migration
         Schema::create('errors', function(Blueprint $table)
         {
             $table->engine = 'InnoDB';
-            
+
             $table->increments('id');
             $table->unsignedInteger('gedcom_id');
             $table->unsignedInteger('indi_id')->nullable();
@@ -25,18 +25,18 @@ class CreateErrorsTable extends Migration
             $table->string('type_broad');
             $table->string('type_specific');
             $table->string('eval_broad');
-            $table->string('eval_specific');            
+            $table->string('eval_specific');
             $table->string('message');
             $table->timestamps();
-            
+
+            $table->foreign('gedcom_id')->references('id')->on('gedcoms')->onDelete('cascade');
             $table->foreign('indi_id')->references('id')->on('individuals')->onDelete('cascade');
             $table->foreign('fami_id')->references('id')->on('families')->onDelete('cascade');
-            $table->index('gedcom_id');             
-            $table->index('type_broad');  
-            $table->index('type_specific');  
-            $table->index('eval_broad');  
-            $table->index('eval_specific');  
-            
+
+            $table->index('type_broad');
+            $table->index('type_specific');
+            $table->index('eval_broad');
+            $table->index('eval_specific');
         });
     }
 

@@ -27,6 +27,7 @@ class CreateIndividualsTable extends Migration
             $table->timestamps();
             
             $table->foreign('gedcom_id')->references('id')->on('gedcoms')->onDelete('cascade');
+            
             $table->index('gedcom_key');
             $table->index('sex');
         });

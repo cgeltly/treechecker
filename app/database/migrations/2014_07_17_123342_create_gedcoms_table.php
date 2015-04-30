@@ -28,8 +28,8 @@ class CreateGedcomsTable extends Migration
             $table->boolean('error_checked')->default(false);
             $table->timestamps();
             
-            //delete user's gedcom files when user is deleted
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            
             $table->index('parsed');
         });
     }

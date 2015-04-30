@@ -16,18 +16,16 @@ class CreateChildrenTable extends Migration
         Schema::create('children', function(Blueprint $table)
         {
             $table->engine = 'InnoDB';
-            
+
             $table->increments('id');
             $table->unsignedInteger('gedcom_id');
             $table->unsignedInteger('fami_id');
             $table->unsignedInteger('indi_id');
             $table->timestamps();
-            
+
+            $table->foreign('gedcom_id')->references('id')->on('gedcoms')->onDelete('cascade');
             $table->foreign('fami_id')->references('id')->on('families')->onDelete('cascade');
             $table->foreign('indi_id')->references('id')->on('individuals')->onDelete('cascade');
-            $table->index('gedcom_id');            
-
-
         });
     }
 

@@ -31,10 +31,6 @@ class CreateNotesTable extends Migration
             $table->foreign('fami_id')->references('id')->on('families')->onDelete('cascade');
             $table->foreign('indi_id')->references('id')->on('individuals')->onDelete('cascade');
             $table->foreign('even_id')->references('id')->on('events')->onDelete('cascade');
-            $table->index('gedcom_id');
-            $table->index('fami_id');
-            $table->index('indi_id');
-            $table->index('even_id');
         });
     }
 
