@@ -28,7 +28,7 @@ class GedcomStatsParents extends Eloquent
      * The database table used by the model.
      * @var string
      */
-    protected $table = 'parental_ages';
+    protected $table = 'stats_parents';
 
     /**
      * Returns the Gedcom to which this GedcomStatistic belongs.
@@ -56,5 +56,5 @@ class GedcomStatsParents extends Eloquent
     {
         return $this->belongsTo('GedcomFamily', 'fami_id');
     }
-    
+
 }

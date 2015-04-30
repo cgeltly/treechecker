@@ -21,18 +21,17 @@ class CreateStatsMarriagesTable extends Migration
             $table->unsignedInteger('gedcom_id');
             $table->unsignedInteger('marr_event_id');
             $table->unsignedInteger('fami_id');
-            $table->date('fami_marriage');
-            $table->integer('marriage_age');
-            $table->boolean('est_date');
+            $table->unsignedInteger('indi_id_husb')->nullable();
+            $table->unsignedInteger('indi_id_wife')->nullable();
+            $table->unsignedInteger('marr_age_husb')->nullable();
+            $table->unsignedInteger('marr_age_wife')->nullable();
+            $table->boolean('est_date_age_husb')->nullable();
+            $table->boolean('est_date_age_wife')->nullable();
             $table->timestamps();
 
             $table->foreign('gedcom_id')->references('id')->on('gedcoms')->onDelete('cascade');
-            $table->foreign('indi_id')->references('id')->on('individuals')->onDelete('cascade');
             $table->foreign('fami_id')->references('id')->on('families')->onDelete('cascade');
-            $table->foreign('marr_event_id')->references('id')->on('events')->onDelete('cascade');            
-            $table->index('gedcom_id');
-            $table->index('indi_id');
-            $table->index('fami_id');
+            $table->foreign('marr_event_id')->references('id')->on('events')->onDelete('cascade');
         });
     }
 

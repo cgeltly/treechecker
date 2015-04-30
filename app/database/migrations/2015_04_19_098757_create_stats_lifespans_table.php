@@ -30,9 +30,7 @@ class CreateStatsLifespansTable extends Migration
             $table->foreign('gedcom_id')->references('id')->on('gedcoms')->onDelete('cascade');
             $table->foreign('indi_id')->references('id')->on('individuals')->onDelete('cascade');
             $table->foreign('birth_event_id')->references('id')->on('events')->onDelete('cascade');
-            $table->foreign('death_event_id')->references('id')->on('events')->onDelete('cascade');            
-            $table->index('gedcom_id');
-            $table->index('indi_id');
+            $table->foreign('death_event_id')->references('id')->on('events')->onDelete('cascade');
         });
     }
 

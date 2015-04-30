@@ -812,7 +812,7 @@ class ParseController extends BaseController
                     'fami_id' => $fami_id,
                     'event' => $fact->getTag(),
                     'date' => $date ? $date['date'] : NULL,
-                    'estimate' => $date ? $date['estimate'] : NULL,
+                    'est_date' => $date ? $date['est_date'] : NULL,
                     'datestring' => $date ? $date['string'] : NULL,
                     'place' => $place,
                     'lati' => $latitude,
@@ -954,7 +954,7 @@ class ParseController extends BaseController
             {
                 $result['date'] = implode('-', array($date->date1->y, $date->date1->m, $date->date1->d));
                 $result['string'] = $fact->getAttribute('DATE');
-                $result['estimate'] = $date->estimate;
+                $result['est_date'] = $date->estimate;
                 return $result;
             }
         }
@@ -965,7 +965,7 @@ class ParseController extends BaseController
             {
                 $result['date'] = implode('-', array($date->date1->y, $date->date1->m, $date->date1->d));
                 $result['string'] = $fact->getAttribute('DATE');
-                $result['estimate'] = $date->estimate;
+                $result['est_date'] = $date->estimate;
                 return $result;
             }
             else

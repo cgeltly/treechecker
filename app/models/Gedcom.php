@@ -88,7 +88,7 @@ class Gedcom extends Eloquent
      */
     public function parental_ages()
     {
-        return $this->hasMany('GedcomParentalAge', 'gedcom_id');
+        return $this->hasMany('GedcomStatsParents', 'gedcom_id');
     }
 
     /**
@@ -97,7 +97,7 @@ class Gedcom extends Eloquent
      */
     public function marriage_ages()
     {
-        return $this->hasMany('GedcomMarriageAge', 'gedcom_id');
+        return $this->hasMany('GedcomStatsMarriages', 'gedcom_id');
     }
 
     /**
@@ -106,7 +106,7 @@ class Gedcom extends Eloquent
      */
     public function lifespans()
     {
-        return $this->hasMany('GedcomLifespan', 'gedcom_id');
+        return $this->hasMany('GedcomStatsLifespans', 'gedcom_id');
     }
 
     /**
@@ -270,7 +270,7 @@ class Gedcom extends Eloquent
     public function allLifespans()
     {
         return $this->lifespanJoins()
-                        ->select('i.id as indi_id', 'i.sex', 'e1.date as birth', 'e2.date as death', $this->dateDiff('e1', 'lifespan'), $this->estDate('e1.est_date', 'e2.est_date', 'est_date'))
+                        ->select('i.id as indi_id', 'e1.id as birth_event_id', 'e2.id as death_event_id', $this->dateDiff('e1', 'lifespan'), $this->estDate('e1.est_date', 'e2.est_date', 'est_date'))
                         ->get();
     }
 
@@ -296,7 +296,7 @@ class Gedcom extends Eloquent
     public function parentalAges($parent)
     {
         return $this->parentalAgesJoins($parent)
-                        ->select('c.fami_id as fami_id', 'i.id as pare_id', 'e2.indi_id as chil_id', 'i.sex as pare_sex', 'e1.date as pare_birth', 'e2.date as chil_birth', $this->sqlAge('parental_age'), $this->estDate('e1.estimate', 'e2.estimate', 'estimated'))
+                        ->select('c.fami_id as fami_id', 'i.id as pare_id', 'e2.indi_id as chil_id', 'i.sex as pare_sex', 'e1.date as pare_birth', 'e2.date as chil_birth', 'e1.id as par_birth_event_id', 'e2.id as chil_birth_event_id', $this->sqlAge('parental_age'), $this->estDate('e1.est_date', 'e2.est_date', 'est_date'))
                         ->get();
     }
 
@@ -321,7 +321,7 @@ class Gedcom extends Eloquent
     public function marriageAgesJoins()
     {
         return DB::table('families as f')
-                        ->join(DB::raw('(SELECT fami_id, date, est_date, event, MIN(YEAR(date)) MinDate
+                        ->join(DB::raw('(SELECT id, fami_id, date, est_date, event, MIN(YEAR(date)) MinDate
                                 FROM events WHERE event = "MARR" AND gedcom_id = ' . $this->id . ' ' . 
                                 'GROUP BY event, fami_id) AS e2'), 'f.id', '=', 'e2.fami_id')
                         ->join('events as e1', 'f.indi_id_husb', '=', 'e1.indi_id')
@@ -337,6 +337,7 @@ class Gedcom extends Eloquent
     {
         return $this->marriageAgesJoins()
                         ->select('f.id as fami_id', 'e1.indi_id as indi_id_husb', 'e0.indi_id as indi_id_wife', 
+                                'e2.id as marr_event_id',
                                 $this->dateDiff('e1', 'marr_age_husb'), $this->dateDiff('e0', 'marr_age_wife'), 
                                 $this->estDate('e1.est_date', 'e2.est_date', 'est_date_age_husb'), 
                                 $this->estDate('e0.est_date', 'e2.est_date', 'est_date_age_wife'))
@@ -400,12 +401,12 @@ class Gedcom extends Eloquent
         return $this->marriageAge()->min($this->sqlAge());
     }
 
-    public function marriageAges()
+    /*public function marriageAges()
     {
         return $this->marriageAge()
                         ->select('i.id as indi_id', 'i.sex as indi_sex', 'e1.date as indi_birth', 'f.id as fami_id', 'e2.date as fami_marriage', $this->dateDiff('e1', 'marriage_age'), $this->estDate('e1.estimate', 'e2.estimate', 'estimated'))
                         ->get();
-    }
+    }*/
 
     /*
      * Helpers

@@ -201,34 +201,33 @@ class CheckController extends BaseController
      */
     private function parentalAgeStats($gedcom)
     {
-
         foreach ($gedcom->parentalAges('wife') as $i)
         {
-            $mother_age = new GedcomParentalAge();
+            $mother_age = new GedcomStatsParents();
             $mother_age->gedcom_id = $gedcom->id;
             $mother_age->fami_id = $i->fami_id;
-            $mother_age->pare_id = $i->pare_id;
+            $mother_age->par_id = $i->pare_id;
             $mother_age->chil_id = $i->chil_id;
-            $mother_age->pare_sex = $i->pare_sex;
-            $mother_age->pare_birth = $i->pare_birth;
-            $mother_age->chil_birth = $i->chil_birth;
-            $mother_age->parental_age = $i->parental_age;
-            $mother_age->estimated = $i->estimated;
+            $mother_age->par_birth_event_id = $i->par_birth_event_id;
+            $mother_age->chil_birth_event_id = $i->chil_birth_event_id;
+            $mother_age->par_age = $i->parental_age;
+            $mother_age->est_date = $i->est_date;
+            $mother_age->par_sex = $i->pare_sex;
             $mother_age->save();
         }
 
         foreach ($gedcom->parentalAges('husb') as $i)
         {
-            $father_age = new GedcomParentalAge();
+            $father_age = new GedcomStatsParents();
             $father_age->gedcom_id = $gedcom->id;
             $father_age->fami_id = $i->fami_id;
-            $father_age->pare_id = $i->pare_id;
+            $father_age->par_id = $i->pare_id;
             $father_age->chil_id = $i->chil_id;
-            $father_age->pare_sex = $i->pare_sex;
-            $father_age->pare_birth = $i->pare_birth;
-            $father_age->chil_birth = $i->chil_birth;
-            $father_age->parental_age = $i->parental_age;
-            $father_age->estimated = $i->estimated;
+            $father_age->par_birth_event_id = $i->par_birth_event_id;
+            $father_age->chil_birth_event_id = $i->chil_birth_event_id;
+            $father_age->par_age = $i->parental_age;
+            $father_age->est_date = $i->est_date;
+            $father_age->par_sex = $i->pare_sex;
             $father_age->save();
         }
     }
@@ -241,15 +240,16 @@ class CheckController extends BaseController
     {
         foreach ($gedcom->marriageAges() as $i)
         {
-            $marriage_age = new GedcomMarriageAge();
+            $marriage_age = new GedcomStatsMarriages();
             $marriage_age->gedcom_id = $gedcom->id;
-            $marriage_age->indi_id = $i->indi_id;
-            $marriage_age->indi_sex = $i->indi_sex;
-            $marriage_age->indi_birth = $i->indi_birth;
+            $marriage_age->marr_event_id = $i->marr_event_id;
             $marriage_age->fami_id = $i->fami_id;
-            $marriage_age->fami_marriage = $i->fami_marriage;
-            $marriage_age->marriage_age = $i->marriage_age;
-            $marriage_age->estimated = $i->estimated;
+            $marriage_age->indi_id_husb = $i->indi_id_husb;
+            $marriage_age->indi_id_wife = $i->indi_id_wife;
+            $marriage_age->marr_age_husb = $i->marr_age_husb;
+            $marriage_age->marr_age_wife = $i->marr_age_wife;
+            $marriage_age->est_date_age_husb = $i->est_date_age_husb;
+            $marriage_age->est_date_age_wife = $i->est_date_age_wife;
             $marriage_age->save();
         }
     }
@@ -262,14 +262,13 @@ class CheckController extends BaseController
     {
         foreach ($gedcom->allLifespans() as $i)
         {
-            $lifespan = new GedcomLifespan();
+            $lifespan = new GedcomStatsLifespans();
             $lifespan->gedcom_id = $gedcom->id;
             $lifespan->indi_id = $i->indi_id;
-            $lifespan->sex = $i->sex;
-            $lifespan->birth = $i->birth;
-            $lifespan->death = $i->death;
+            $lifespan->birth_event_id = $i->birth_event_id;
+            $lifespan->death_event_id = $i->death_event_id;
             $lifespan->lifespan = $i->lifespan;
-            $lifespan->estimated = $i->est_date;
+            $lifespan->est_date = $i->est_date;
             $lifespan->save();
         }
     }

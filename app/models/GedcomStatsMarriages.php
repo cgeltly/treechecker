@@ -56,5 +56,5 @@ class GedcomStatsMarriages extends Eloquent
     {
         return $this->belongsTo('GedcomFamily', 'fami_id');
     }
-    
+
 }
