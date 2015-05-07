@@ -83,6 +83,25 @@ class GedcomFamily extends Eloquent
     }
 
     /**
+     * Returns the GedcomEvents of a certain type (e.g. BIRT, DEAT).
+     * @param string $type
+     * @return Illuminate\Database\Eloquent\Collection
+     */
+    public function eventsByType($type)
+    {
+        return $this->events()->whereEvent($type);
+    }
+
+    /**
+     * Returns the GedcomErrors belonging to this GedcomFamily.
+     * @return Illuminate\Database\Eloquent\Collection
+     */
+    public function errors()
+    {
+        return $this->hasMany('GedcomError', 'indi_id');
+    }
+
+    /**
      * Returns the GedcomNotes belonging to this GedcomFamily.
      * @return Illuminate\Database\Eloquent\Collection
      */

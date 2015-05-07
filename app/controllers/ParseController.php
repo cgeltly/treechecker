@@ -277,8 +277,8 @@ class ParseController extends BaseController
         $system->gedcom = $gedrec;
         $system->save();
     }
-    
-    private function matchTag($source, $tag) 
+
+    private function matchTag($source, $tag)
     {
         preg_match('/\d ' . $tag . ' (.*)/', $source, $matches);
         return $matches ? $matches[1] : NULL;
@@ -833,12 +833,65 @@ class ParseController extends BaseController
 
             if ($event)
             {
+                // Check if an event exists for this event type
+                $this->checkEventExists($event, $gedcom_id, $indi_id, $fami_id);
+                
                 // Insert the event into the database 
                 $event_id = DB::table('events')->insertGetId($event);
-
+                
                 // Parse event notes and sources
                 $this->parseEventNotes($fact, $gedcom_id, $event_id);
                 $this->parseEventSources($fact, $event_id);
+            }
+        }
+    }
+
+    /**
+     * Checks whether an event exists. If so, creates a parse warning.
+     * @param GedcomEvent $event
+     * @param integer $gedcom_id
+     * @param integer $indi_id
+     * @param integer $fami_id
+     * @return boolean
+     */
+    private function checkEventExists($event, $gedcom_id, $indi_id = NULL, $fami_id = NULL)
+    {
+        $event_type = $event['event'];
+
+        if ($indi_id)
+        {
+            if (GedcomEvent::where('indi_id', $indi_id)->where('event', $event_type)->first())
+            {
+                $i = GedcomIndividual::find($indi_id);
+
+                $error = new GedcomError();
+                $error->gedcom_id = $gedcom_id;
+                $error->indi_id = $indi_id;
+                $error->stage = 'parsing';
+                $error->type_broad = 'event';
+                $error->type_specific = 'duplicate event';
+                $error->eval_broad = 'warning';
+                $error->eval_specific = '';
+                $error->message = sprintf('Duplicate event of type %s for individual %s', $event_type, $i->gedcom_key);
+                $error->save();
+            }
+        }
+        else if ($fami_id)
+        {
+            if (GedcomEvent::where('fami_id', $fami_id)->where('event', $event_type)->first())
+            {
+                $f = GedcomFamily::find($fami_id);
+
+                $error = new GedcomError();
+                $error->gedcom_id = $gedcom_id;
+                $error->fami_id = $fami_id;
+                $error->stage = 'parsing';
+                $error->type_broad = 'event';
+                $error->type_specific = 'duplicate event';
+                $error->eval_broad = 'warning';
+                $error->eval_specific = '';
+                $error->message = sprintf('Duplicate event of type %s for family %s', $event_type, $f->gedcom_key);
+                $error->save();
             }
         }
     }

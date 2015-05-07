@@ -49,6 +49,25 @@ class GedcomIndividual extends Eloquent
     }
 
     /**
+     * Returns the GedcomEvents of a certain type (e.g. BIRT, DEAT).
+     * @param string $type
+     * @return Illuminate\Database\Eloquent\Collection
+     */
+    public function eventsByType($type)
+    {
+        return $this->events()->whereEvent($type);
+    }
+
+    /**
+     * Returns the GedcomErrors belonging to this GedcomIndividual.
+     * @return Illuminate\Database\Eloquent\Collection
+     */
+    public function errors()
+    {
+        return $this->hasMany('GedcomError', 'indi_id');
+    }
+
+    /**
      * Returns the GedcomNotes belonging to this GedcomIndividual.
      * @return Illuminate\Database\Eloquent\Collection
      */
@@ -76,30 +95,30 @@ class GedcomIndividual extends Eloquent
     }
 
     /**
-     * Returns the birth event for this GedcomIndividual.
+     * Returns the first adoption event for this GedcomIndividual.
      * @return GedcomEvent
      */
     public function birth()
     {
-        return $this->events()->whereEvent('BIRT')->first();
+        return $this->eventsByType('BIRT')->first();
     }
 
     /**
-     * Returns the death event for this GedcomIndividual.
+     * Returns the first death event for this GedcomIndividual.
      * @return GedcomEvent
      */
     public function death()
     {
-        return $this->events()->whereEvent('DEAT')->first();
+        return $this->eventsByType('DEAT')->first();
     }
 
     /**
-     * Returns the adoption event for this GedcomIndividual.
+     * Returns the first adoption event for this GedcomIndividual.
      * @return GedcomEvent
      */
     public function isAdopted()
     {
-        return $this->events()->whereEvent('ADOP')->first();
+        return $this->eventsByType('ADOP')->first();
     }
 
     /**
