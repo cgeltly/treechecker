@@ -25,6 +25,10 @@ class GedcomIndividualTest extends TestCase
         $this->assertEquals($ind->birth()->date, '1898-10-15');
         $this->assertEmpty($ind->death());
         $this->assertNotEmpty($ind->isAdopted());
+        
+        // I2 is marked as private 
+        $ind2 = GedcomIndividual::GedcomKey($gedcom->id, 'I2')->first();
+        $this->assertTrue((bool) $ind2->private);
     }
     
     /**

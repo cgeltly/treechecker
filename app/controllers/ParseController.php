@@ -305,9 +305,16 @@ class ParseController extends BaseController
         $individual->sex = strtolower($record->getSex());
         $individual->gedcom_key = $xref;
         $individual->gedcom = $gedrec;
+        $individual->private = $this->isPrivate($gedrec);
         $individual->save();
 
         $this->processEvents($record, $gedcom_id, $individual->id);
+    }
+
+    private function isPrivate($gedrec)
+    {
+        return str_contains($gedrec, '1 RESN privacy') ||
+                str_contains($gedrec, '1 RESN confidential');
     }
 
     /**
@@ -835,10 +842,10 @@ class ParseController extends BaseController
             {
                 // Check if an event exists for this event type
                 $this->checkEventExists($event, $gedcom_id, $indi_id, $fami_id);
-                
+
                 // Insert the event into the database 
                 $event_id = DB::table('events')->insertGetId($event);
-                
+
                 // Parse event notes and sources
                 $this->parseEventNotes($fact, $gedcom_id, $event_id);
                 $this->parseEventSources($fact, $event_id);
