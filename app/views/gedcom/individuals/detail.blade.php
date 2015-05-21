@@ -8,6 +8,21 @@
     </h3>
 </div>
 
+@if ($individual->private)
+<div class="alert alert-warning" role="alert">
+    @lang('gedcom/individuals/messages.is_marked_private')
+</div>
+{{ HTML::linkAction('IndividualsController@getMarkPublic', 
+        Lang::get('gedcom/individuals/messages.mark_public'), 
+        array($individual->id), 
+        array('class' => 'btn btn-primary pull-right', 'role' => 'button')) }}
+@else
+{{ HTML::linkAction('IndividualsController@getMarkPrivate', 
+        Lang::get('gedcom/individuals/messages.mark_private'), 
+        array($individual->id), 
+        array('class' => 'btn btn-primary pull-right', 'role' => 'button')) }}
+@endif
+
 <script>
     $(function () {
         $("#tabs").tabs();

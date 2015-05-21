@@ -47,7 +47,7 @@ class IndividualsController extends BaseController
     }
 
     /**
-     * Shows the details for a GedcomIndividual
+     * Shows the details for a GedcomIndividual.
      * @param int $id
      */
     public function getShow($id)
@@ -289,6 +289,42 @@ class IndividualsController extends BaseController
         }
 
         return $individuals->count();
+    }
+
+    /**
+     * Marks a GedcomIndividual as private.
+     * @param int $id
+     * @return Redirect to individual page
+     */
+    public function getMarkPrivate($id)
+    {
+        return $this->privatize($id, TRUE, 'gedcom/individuals/messages.marked_private');
+    }
+
+    /**
+     * Marks a GedcomIndividual as public.
+     * @param int $id
+     * @return Redirect to individual page
+     */
+    public function getMarkPublic($id)
+    {
+        return $this->privatize($id, FALSE, 'gedcom/individuals/messages.marked_public');
+    }
+
+    /**
+     * Marks a GedcomIndividual as private or public.
+     * @param int $id
+     * @param boolean $private
+     * @param string $message
+     * @return Redirect to individual page
+     */
+    private function privatize($id, $private, $message)
+    {
+        $individual = GedcomIndividual::findOrFail($id);
+        $individual->private = $private;
+        $individual->save();
+        return Redirect::to('individuals/show/' . $id)
+                        ->with('message', Lang::get($message, array('key' => $individual->gedcom_key)));
     }
 
 }
