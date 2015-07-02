@@ -1,0 +1,62 @@
+0 HEAD
+1 SOUR Wiki
+2 WWW http://wiki-de.genealogy.net/GEDCOM/FAMC-Tag#Beispiel_f.C3.BCr_Darstellung_einer_Adoption
+1 FILE My Family
+1 DATE 6 AUG 2014
+1 DEST ANSTFILE
+1 GEDC
+2 VERS 5.5.1
+2 FORM LINEAGE-LINKED
+1 SUBM @I1@
+2 NAME Martijn van der Klis
+1 CHAR UTF-8
+0 @F1@ FAM
+1 HUSB @I2@
+1 WIFE @I3@
+1 CHIL @I1@
+1 MARR 
+2 DATE 17 MAY 1890
+2 PLAC Musterstadt
+0 @F2@ FAM
+1 WIFE @I4@
+1 CHIL @I1@
+1 NOTE nicht verheiratet
+0 @I1@ INDI
+1 NAME Max /Mustermann/
+2 GIVN Max
+2 SURN Mustermann
+1 NAME Werner /Schmidt/
+2 GIVN Werner
+2 SURN Schmidt
+2 TYPE birth
+1 SEX M
+1 BIRT 
+2 DATE 15 OCT 1898
+2 PLAC Musterdorf
+1 FAMC @F1@
+2 PEDI adopted
+1 FAMC @F2@
+2 PEDI birth
+1 ADOP 
+2 DATE 18 MAR 1899
+2 PLAC Musterstadt
+0 @I2@ INDI
+1 RESN Privacy
+1 NAME Rolf /Mustermann/
+2 GIVN Rolf
+2 SURN Mustermann
+1 SEX M
+1 FAMS @F1@
+0 @I3@ INDI
+1 NAME Renate /Musterfrau/
+2 GIVN Renate
+2 SURN Musterfrau
+1 SEX F
+1 FAMS @F1@
+0 @I4@ INDI
+1 NAME Frida /Schmidt/
+2 GIVN Frida
+2 SURN Schmidt
+1 SEX F
+1 FAMS @F2@
+0 TRLR

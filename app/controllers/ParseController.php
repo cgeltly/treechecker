@@ -26,6 +26,7 @@ class ParseController extends BaseController
 
     private $noteMap = array();
     private $sourceMap = array();
+    private $familyMap = array();
 
     public function __construct()
     {
@@ -80,6 +81,12 @@ class ParseController extends BaseController
                 $this->importRecords($i, $gedcom_id);
                 Session::put('progress', min(floor(($i / $filecount) * 100), 99));
                 Session::save();
+            }
+            
+            // Create the families in the familyMap
+            foreach ($this->familyMap as $f => $r)
+            {
+                $this->createFamily($f, $r, $gedcom_id);
             }
 
             // If we reached this point, and there are still notes in the noteMap, add parse errors
@@ -325,30 +332,42 @@ class ParseController extends BaseController
      */
     private function processFamily($xref, $gedrec, $gedcom_id)
     {
-        $record = new WT_Family($xref, $gedrec, null, $gedcom_id);
-
         // Find the husband and wife in the Gedcom
-        if (preg_match('/\n1 HUSB @(' . WT_REGEX_XREF . ')@/', $gedrec, $match))
-        {
-            $husb = $match[1];
-        }
-        else
-        {
-            $husb = '';
-        }
-        if (preg_match('/\n1 WIFE @(' . WT_REGEX_XREF . ')@/', $gedrec, $match))
-        {
-            $wife = $match[1];
-        }
-        else
-        {
-            $wife = '';
-        }
+        $husb = $this->getIndividualKey($gedrec, 'HUSB');
+        $wife = $this->getIndividualKey($gedrec, 'WIFE');
 
         // Find the husband and wife in the database
         $husb_ind = GedcomIndividual::GedcomKey($gedcom_id, $husb)->first();
         $wife_ind = GedcomIndividual::GedcomKey($gedcom_id, $wife)->first();
 
+        // If we can't find either the husband or the wife, 
+        // delay family creation until after the whole file has been processed. 
+        // Families might be stated before individuals (#16)
+        if (($husb && !$husb_ind) || ($wife && !$wife_ind))
+        {
+            $this->familyMap[$xref] = $gedrec;
+        }
+        // Otherwise, directly create the family.
+        else
+        {
+            $this->createFamily($xref, $gedrec, $gedcom_id);
+        }
+    }
+
+    private function createFamily($xref, $gedrec, $gedcom_id)
+    {
+        $record = new WT_Family($xref, $gedrec, null, $gedcom_id);
+
+        // Find the husband and wife in the Gedcom
+        $husb = $this->getIndividualKey($gedrec, 'HUSB');
+        $wife = $this->getIndividualKey($gedrec, 'WIFE');
+
+        // Find the husband and wife in the database
+        $husb_ind = GedcomIndividual::GedcomKey($gedcom_id, $husb)->first();
+        $wife_ind = GedcomIndividual::GedcomKey($gedcom_id, $wife)->first();
+
+        // TODO: add errors if husband/wife could not be found
+ 
         // Create the GedcomFamily
         $family = new GedcomFamily();
         $family->gedcom_id = $gedcom_id;
@@ -365,6 +384,25 @@ class ParseController extends BaseController
         // Process the GedcomChildren and GedcomEvents
         $this->processChildren($record, $gedcom_id, $family);
         $this->processEvents($record, $gedcom_id, NULL, $family->id);
+    }
+
+    /**
+     * Retrieves the key for an individual of a given sex in a family record
+     * @param string $gedrec
+     * @param string $sex
+     * @return string
+     */
+    private function getIndividualKey($gedrec, $sex)
+    {
+        if (preg_match('/\n1 ' . $sex . ' @(' . WT_REGEX_XREF . ')@/', $gedrec, $match))
+        {
+            $result = $match[1];
+        }
+        else
+        {
+            $result = '';
+        }
+        return $result;
     }
 
     /**

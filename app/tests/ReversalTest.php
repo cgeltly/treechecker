@@ -1,6 +1,10 @@
 <?php
 
-class GedcomIndividualTest extends TestCase
+/**
+ * This tests the same as GedcomIndividualTest, but on a file with 
+ * families and individuals reversed. 
+ */
+class ReversalTest extends TestCase
 {
 
     protected $useDatabase = true;
@@ -10,7 +14,7 @@ class GedcomIndividualTest extends TestCase
      */
     public function testIndividual()
     {
-        $gedcom = $this->uploadAndParseFile('adoption.ged');
+        $gedcom = $this->uploadAndParseFile('reversed.ged');
 
         // Basic checks
         // I1 (Max /Mustermann/, 15 OCT 1898 - ?) is adopted
@@ -36,7 +40,7 @@ class GedcomIndividualTest extends TestCase
      */
     public function testFamily()
     {
-        $gedcom = $this->uploadAndParseFile('adoption.ged');
+        $gedcom = $this->uploadAndParseFile('reversed.ged');
        
         // I2 (Rolf /Mustermann/) is the father of I1
         $ind = GedcomIndividual::GedcomKey($gedcom->id, 'I1')->first();

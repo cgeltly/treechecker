@@ -232,7 +232,7 @@ class GedcomsController extends BaseController
 
         if ($this->allowedAccess($gedcom->user_id))
         {
-            $source = 'families/data/' . $id;
+            $source = 'gedcoms/famidata/' . $id;
             $title = $gedcom->tree_name;
             $subtitle = Lang::get('gedcom/families/subtitle.result_one_tree');
             $count = $gedcom->families()->count();
@@ -415,19 +415,32 @@ class GedcomsController extends BaseController
     {
         $user = Auth::user();
 
-        $families = GedcomFamily::leftJoin('gedcoms', 'gedcoms.id', '=', 'families.gedcom_id')
-                ->select(array('families.gedcom_key', 'families.indi_id_husb', 'families.indi_id_wife', 'families.id'));
-        $families->where('gedcom_id', $id);
+        $families = GedcomFamily::leftJoin('gedcoms AS g', 'families.gedcom_id', '=', 'g.id')
+                ->leftJoin('individuals AS h', 'families.indi_id_husb', '=', 'h.id')
+                ->leftJoin('individuals AS w', 'families.indi_id_wife', '=', 'w.id')
+                ->select(array('g.file_name',
+            'families.gedcom_id', 'families.gedcom_key', 'families.id',
+            'families.indi_id_husb', 'families.indi_id_wife',
+            'h.gedcom_key AS hgk', DB::raw('CONCAT(h.first_name, " ", h.last_name) AS husb_name'),
+            'w.gedcom_key AS wgk', DB::raw('CONCAT(w.first_name, " ", w.last_name) AS wife_name')));
+        $families->where('g.id', $id);
+
+        $families->take(100);
+
         if ($user->role != 'admin')
         {
-            $families->where('gedcoms.user_id', $user->id);
+            $families->where('g.user_id', $user->id);
         }
 
         return Datatables::of($families)
+                        ->edit_column('file_name', '{{ HTML::link("gedcoms/show/" . $gedcom_id, $file_name) }}')
                         ->edit_column('gedcom_key', '{{ HTML::link("families/show/" . $id, $gedcom_key) }}')
-                        ->edit_column('indi_id_husb', '{{ $indi_id_husb ? HTML::link("individuals/show/" . $indi_id_husb, $indi_id_husb) : "" }}')
-                        ->edit_column('indi_id_wife', '{{ $indi_id_wife ? HTML::link("individuals/show/" . $indi_id_wife, $indi_id_wife) : "" }}')
+                        ->edit_column('hgk', '{{ $indi_id_husb ? HTML::link("individuals/show/" . $indi_id_husb, $hgk) : "" }}')
+                        ->edit_column('wgk', '{{ $indi_id_wife ? HTML::link("individuals/show/" . $indi_id_wife, $wgk) : "" }}')
                         ->remove_column('id')
+                        ->remove_column('gedcom_id')
+                        ->remove_column('indi_id_husb')
+                        ->remove_column('indi_id_wife')
                         ->make();
     }
 
