@@ -31,6 +31,13 @@ class GedcomSystem extends Eloquent
     protected $table = 'systems';
 
     /**
+     * Hidden fields in the JSON export.
+     * @var array
+     */
+    protected $hidden = array('id', 'gedcom_id', 'gedcom',
+        'created_at', 'updated_at');
+
+    /**
      * Returns the Gedcom to which this GedccomSystem belongs.
      * @return Gedcom
      */

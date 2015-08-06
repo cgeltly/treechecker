@@ -31,6 +31,14 @@ class GedcomSource extends Eloquent
     protected $table = 'sources';
 
     /**
+     * Hidden fields in the JSON export.
+     * @var array
+     */
+    protected $hidden = array('id', 'gedcom_id', 'gedcom',
+        'indi_id', 'fami_id', 'even_id', 'note_id',
+        'created_at', 'updated_at');
+
+    /**
      * Returns the Gedcom to which this GedcomSource belongs.
      * @return Gedcom
      */

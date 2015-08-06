@@ -73,8 +73,8 @@ class IndividualsController extends BaseController
         $user = Auth::user();
 
         $individuals = GedcomIndividual::leftJoin('gedcoms', 'gedcoms.id', '=', 'individuals.gedcom_id')
-                ->select(array('gedcoms.file_name AS gedc', 'gedcoms.id AS gedcom_id',
-            'gedcom_key', 'first_name', 'last_name', 'sex', 'individuals.id'));
+                ->select(array('gedcoms.file_name AS gedc', 'gedcoms.id AS gc_id',
+            'gedcom_key', 'first_name', 'last_name', 'sex', 'individuals.id AS in_id'));
 
         $individuals->take(100);
 
@@ -84,10 +84,10 @@ class IndividualsController extends BaseController
         }
 
         return Datatables::of($individuals)
-                        ->edit_column('gedc', '{{ HTML::link("gedcoms/show/" . $gedcom_id, $gedc) }}')
-                        ->edit_column('gedcom_key', '{{ HTML::link("individuals/show/" . $id, $gedcom_key) }}')
-                        ->remove_column('id')
-                        ->remove_column('gedcom_id')
+                        ->edit_column('gedc', '{{ HTML::link("gedcoms/show/" . $gc_id, $gedc) }}')
+                        ->edit_column('gedcom_key', '{{ HTML::link("individuals/show/" . $in_id, $gedcom_key) }}')
+                        ->remove_column('in_id')
+                        ->remove_column('gc_id')
                         ->make();
     }
 
@@ -325,6 +325,24 @@ class IndividualsController extends BaseController
         $individual->save();
         return Redirect::to('individuals/show/' . $id)
                         ->with('message', Lang::get($message, array('key' => $individual->gedcom_key)));
+    }
+
+    /**
+     * Serializes a GedcomIndividual to JSON
+     * @param integer $id
+     * @return JSON
+     */
+    public function getJson($id)
+    {
+        $i = GedcomIndividual::where('id', $id)
+                ->with('events')
+                ->with('events.notes')
+                ->with('events.notes.sources')
+                ->with('notes')
+                ->with('notes.sources')
+                ->with('sources')
+                ->get();
+        return Response::json($i);
     }
 
 }

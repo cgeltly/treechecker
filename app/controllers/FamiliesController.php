@@ -78,8 +78,8 @@ class FamiliesController extends BaseController
                 ->leftJoin('individuals AS h', 'families.indi_id_husb', '=', 'h.id')
                 ->leftJoin('individuals AS w', 'families.indi_id_wife', '=', 'w.id')
                 ->select(array('g.file_name',
-            'families.gedcom_id', 'families.gedcom_key', 'families.id',
-            'families.indi_id_husb', 'families.indi_id_wife',
+            'families.gedcom_id AS gc_id', 'families.gedcom_key', 'families.id AS fa_id',
+            'families.indi_id_husb AS hu_id', 'families.indi_id_wife AS wi_id',
             'h.gedcom_key AS hgk', DB::raw('CONCAT(h.first_name, " ", h.last_name) AS husb_name'),
             'w.gedcom_key AS wgk', DB::raw('CONCAT(w.first_name, " ", w.last_name) AS wife_name')));
 
@@ -91,14 +91,14 @@ class FamiliesController extends BaseController
         }
 
         return Datatables::of($families)
-                        ->edit_column('file_name', '{{ HTML::link("gedcoms/show/" . $gedcom_id, $file_name) }}')
-                        ->edit_column('gedcom_key', '{{ HTML::link("families/show/" . $id, $gedcom_key) }}')
-                        ->edit_column('hgk', '{{ $indi_id_husb ? HTML::link("individuals/show/" . $indi_id_husb, $hgk) : "" }}')
-                        ->edit_column('wgk', '{{ $indi_id_wife ? HTML::link("individuals/show/" . $indi_id_wife, $wgk) : "" }}')
-                        ->remove_column('id')
-                        ->remove_column('gedcom_id')
-                        ->remove_column('indi_id_husb')
-                        ->remove_column('indi_id_wife')
+                        ->edit_column('file_name', '{{ HTML::link("gedcoms/show/" . $gc_id, $file_name) }}')
+                        ->edit_column('gedcom_key', '{{ HTML::link("families/show/" . $fa_id, $gedcom_key) }}')
+                        ->edit_column('hgk', '{{ $hu_id ? HTML::link("individuals/show/" . $hu_id, $hgk) : "" }}')
+                        ->edit_column('wgk', '{{ $wi_id ? HTML::link("individuals/show/" . $wi_id, $wgk) : "" }}')
+                        ->remove_column('fa_id')
+                        ->remove_column('gc_id')
+                        ->remove_column('hu_id')
+                        ->remove_column('wi_id')
                         ->make();
     }
 
@@ -118,7 +118,6 @@ class FamiliesController extends BaseController
         {
             $events->where('gedcoms.user_id', $user->id);
         }
-
 
         return Datatables::of($events)->make();
     }
@@ -158,6 +157,24 @@ class FamiliesController extends BaseController
         }
 
         return $families->count();
+    }
+
+    /**
+     * Serializes a GedcomFamily to JSON
+     * @param integer $id
+     * @return JSON
+     */
+    public function getJson($id)
+    {
+        $f = GedcomFamily::where('id', $id)
+                ->with('events')
+                ->with('events.notes')
+                ->with('events.notes.sources')
+                ->with('notes')
+                ->with('notes.sources')
+                ->with('sources')
+                ->get();
+        return Response::json($f);
     }
 
 }

@@ -31,6 +31,21 @@ class GedcomFamily extends Eloquent
     protected $table = 'families';
 
     /**
+     * Hidden fields in the JSON export.
+     * @var array
+     */
+    protected $hidden = array('id', 'gedcom_id', 'gedcom',
+        'indi_id_husb', 'indi_id_wife',
+        'husband', 'wife', 'children',
+        'created_at', 'updated_at');
+
+    /**
+     * Fields to be appended in the JSON export.
+     * @var array
+     */
+    protected $appends = array('husb_key', 'wife_key', 'children_keys');
+
+    /**
      * Returns the Gedcom to which this GedcomFamily belongs.
      * @return Gedcom
      */
@@ -49,6 +64,15 @@ class GedcomFamily extends Eloquent
     }
 
     /**
+     * Returns the Gedcom key of the husband of this GedcomFamily.
+     * @return string
+     */
+    public function getHusbKeyAttribute()
+    {
+        return $this->husband ? $this->husband->gedcom_key : "";
+    }
+
+    /**
      * Returns the wife of this GedcomFamily.
      * @return GedcomIndividual
      */
@@ -56,7 +80,16 @@ class GedcomFamily extends Eloquent
     {
         return $this->belongsTo('GedcomIndividual', 'indi_id_wife');
     }
-    
+
+    /**
+     * Returns the Gedcom key of the wife of this GedcomFamily.
+     * @return string
+     */
+    public function getWifeKeyAttribute()
+    {
+        return $this->wife ? $this->wife->gedcom_key : "";
+    }
+
     /**
      * Returns the spouse of the given GedcomIndividual in this GedcomFamily.
      * @return GedcomIndividual
@@ -129,6 +162,21 @@ class GedcomFamily extends Eloquent
     }
 
     /**
+     * Returns the Gedcom key of the children of this GedcomFamily.
+     * TODO: maybe output this in plain list format?
+     * @return string
+     */
+    public function getChildrenKeysAttribute()
+    {
+        $result = array();
+        foreach ($this->children->lists('gedcom_key') as $child)
+        {
+            array_push($result, array('gedcom_key' => $child));
+        }
+        return $result;
+    }
+
+    /**
      * Finds all families for the given Gedcom ID and key.
      * @param Illuminate\Database\Eloquent\Builder $query
      * @param int $gedcom_id
@@ -139,5 +187,5 @@ class GedcomFamily extends Eloquent
     {
         return $query->where('gedcom_id', $gedcom_id)->where('gedcom_key', $gedcom_key);
     }
-    
+
 }

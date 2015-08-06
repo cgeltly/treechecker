@@ -314,11 +314,19 @@ class GedcomsController extends BaseController
      * Show a list of all the gedcoms formatted for Datatables.
      * @return Datatables JSON
      */
-    public function getData()
+    public function getData($parsed = NULL, $checked = NULL)
     {
         $user = Auth::user();
 
-        $gedcoms = Gedcom::select(array('file_name', 'tree_name', 'source', 'notes', 'parsed', 'id'));
+        $gedcoms = Gedcom::select(array('file_name', 'tree_name', 'source', 'notes', 'parsed', 'id AS gc_id'));
+        if (isset($parsed))
+        {
+            $gedcoms->where('parsed', 0);
+        }
+        if (isset($checked))
+        {
+            $gedcoms->where('error_checked', 0);
+        }
 
         if ($user->role != 'admin')
         {
@@ -326,14 +334,14 @@ class GedcomsController extends BaseController
         }
 
         return Datatables::of($gedcoms)
-                        ->edit_column('file_name', '{{ HTML::link("gedcoms/show/" . $id, $file_name) }}')
+                        ->edit_column('file_name', '{{ HTML::link("gedcoms/show/" . $gc_id, $file_name) }}')
                         ->edit_column('notes', '{{{ Str::words($notes, 10) }}}')
                         ->add_column('actions', function($row)
                         {
                             return $this->actions($row);
                         })
                         ->remove_column('parsed')
-                        ->remove_column('id')
+                        ->remove_column('gc_id')
                         ->make();
     }
 
@@ -343,22 +351,7 @@ class GedcomsController extends BaseController
      */
     public function getUnparseddata()
     {
-        $user = Auth::user();
-
-        $gedcoms = Gedcom::select(array('file_name', 'tree_name', 'source', 'notes', 'parsed', 'id'));
-        $gedcoms->where('parsed', 0);
-        if ($user->role != 'admin')
-        {
-            $gedcoms->where('user_id', $user->id);
-        }
-
-        return Datatables::of($gedcoms)
-                        ->edit_column('file_name', '{{ HTML::link("gedcoms/show/" . $id, $file_name) }}')
-                        ->edit_column('notes', '{{{ Str::words($notes, 10) }}}')
-                        ->add_column('parse_url', '{{ HTML::link("parse/parse/" . $id, "Parse") }}')
-                        ->remove_column('parsed')
-                        ->remove_column('id')
-                        ->make();
+        return $this->getData(false);
     }
 
     /**
@@ -367,22 +360,7 @@ class GedcomsController extends BaseController
      */
     public function getUncheckeddata()
     {
-        $user = Auth::user();
-
-        $gedcoms = Gedcom::select(array('file_name', 'tree_name', 'source', 'notes', 'error_checked', 'id'));
-        $gedcoms->where('error_checked', 0);
-        if ($user->role != 'admin')
-        {
-            $gedcoms->where('user_id', $user->id);
-        }
-
-        return Datatables::of($gedcoms)
-                        ->edit_column('file_name', '{{ HTML::link("gedcoms/show/" . $id, $file_name) }}')
-                        ->edit_column('notes', '{{{ Str::words($notes, 10) }}}')
-                        ->add_column('check_url', '{{ HTML::link("errors/gedcom/" . $id, "Check") }}')
-                        ->remove_column('error_checked')
-                        ->remove_column('id')
-                        ->make();
+        return $this->getData(NULL, false);
     }
 
     /**
@@ -394,7 +372,7 @@ class GedcomsController extends BaseController
         $user = Auth::user();
 
         $individuals = GedcomIndividual::leftJoin('gedcoms', 'gedcoms.id', '=', 'individuals.gedcom_id')
-                ->select(array('individuals.gedcom_key', 'individuals.first_name', 'individuals.last_name', 'individuals.sex', 'individuals.id'));
+                ->select(array('individuals.gedcom_key', 'individuals.first_name', 'individuals.last_name', 'individuals.sex', 'individuals.id AS in_id'));
         $individuals->where('gedcom_id', $id);
         if ($user->role != 'admin')
         {
@@ -402,8 +380,8 @@ class GedcomsController extends BaseController
         }
 
         return Datatables::of($individuals)
-                        ->edit_column('gedcom_key', '{{ HTML::link("individuals/show/" . $id, $gedcom_key) }}')
-                        ->remove_column('id')
+                        ->edit_column('gedcom_key', '{{ HTML::link("individuals/show/" . $in_id, $gedcom_key) }}')
+                        ->remove_column('in_id')
                         ->make();
     }
 
@@ -419,8 +397,8 @@ class GedcomsController extends BaseController
                 ->leftJoin('individuals AS h', 'families.indi_id_husb', '=', 'h.id')
                 ->leftJoin('individuals AS w', 'families.indi_id_wife', '=', 'w.id')
                 ->select(array('g.file_name',
-            'families.gedcom_id', 'families.gedcom_key', 'families.id',
-            'families.indi_id_husb', 'families.indi_id_wife',
+            'families.gedcom_id AS gc_id', 'families.gedcom_key', 'families.id AS fa_id',
+            'families.indi_id_husb AS hu_id', 'families.indi_id_wife AS wi_id',
             'h.gedcom_key AS hgk', DB::raw('CONCAT(h.first_name, " ", h.last_name) AS husb_name'),
             'w.gedcom_key AS wgk', DB::raw('CONCAT(w.first_name, " ", w.last_name) AS wife_name')));
         $families->where('g.id', $id);
@@ -433,14 +411,14 @@ class GedcomsController extends BaseController
         }
 
         return Datatables::of($families)
-                        ->edit_column('file_name', '{{ HTML::link("gedcoms/show/" . $gedcom_id, $file_name) }}')
-                        ->edit_column('gedcom_key', '{{ HTML::link("families/show/" . $id, $gedcom_key) }}')
-                        ->edit_column('hgk', '{{ $indi_id_husb ? HTML::link("individuals/show/" . $indi_id_husb, $hgk) : "" }}')
-                        ->edit_column('wgk', '{{ $indi_id_wife ? HTML::link("individuals/show/" . $indi_id_wife, $wgk) : "" }}')
-                        ->remove_column('id')
-                        ->remove_column('gedcom_id')
-                        ->remove_column('indi_id_husb')
-                        ->remove_column('indi_id_wife')
+                        ->edit_column('file_name', '{{ HTML::link("gedcoms/show/" . $gc_id, $file_name) }}')
+                        ->edit_column('gedcom_key', '{{ HTML::link("families/show/" . $fa_id, $gedcom_key) }}')
+                        ->edit_column('hgk', '{{ $hu_id ? HTML::link("individuals/show/" . $hu_id, $hgk) : "" }}')
+                        ->edit_column('wgk', '{{ $wi_id ? HTML::link("individuals/show/" . $wi_id, $wgk) : "" }}')
+                        ->remove_column('fa_id')
+                        ->remove_column('gc_id')
+                        ->remove_column('hu_id')
+                        ->remove_column('wi_id')
                         ->make();
     }
 
@@ -451,19 +429,19 @@ class GedcomsController extends BaseController
      */
     private function actions($row)
     {
-        $show = HTML::link('gedcoms/show/' . $row->id, '', array(
+        $show = HTML::link('gedcoms/show/' . $row->gc_id, '', array(
                     'class' => 'glyphicon glyphicon-zoom-in',
                     'title' => Lang::get('common/actions.show')));
-        $edit = HTML::link('gedcoms/edit/' . $row->id, '', array(
+        $edit = HTML::link('gedcoms/edit/' . $row->gc_id, '', array(
                     'class' => 'glyphicon glyphicon-pencil',
                     'title' => Lang::get('common/actions.edit')));
-        $delete = HTML::link('gedcoms/delete/' . $row->id, '', array(
+        $delete = HTML::link('gedcoms/delete/' . $row->gc_id, '', array(
                     'class' => 'glyphicon glyphicon-trash',
                     'title' => Lang::get('common/actions.delete')));
-        $parse = HTML::link('parse/parse/' . $row->id, '', array(
+        $parse = HTML::link('parse/parse/' . $row->gc_id, '', array(
                     'class' => 'glyphicon glyphicon-save parse',
                     'title' => Lang::get('gedcom/gedcoms/actions.parse')));
-        $errors = HTML::link('errors/gedcom/' . $row->id, '', array(
+        $errors = HTML::link('errors/gedcom/' . $row->gc_id, '', array(
                     'class' => 'glyphicon glyphicon-warning-sign',
                     'title' => Lang::get('gedcom/errors/table.errors')));
 
@@ -509,6 +487,33 @@ class GedcomsController extends BaseController
             }
         }
         rmdir($directory);
+    }
+
+    /**
+     * Serializes a Gedcom to JSON
+     * @param integer $id
+     * @return JSON
+     */
+    public function getJson($id)
+    {
+        $g = Gedcom::where('id', $id)
+                ->with('system')
+                ->with('individuals')
+                ->with('individuals.events')
+                ->with('individuals.events.notes')
+                ->with('individuals.events.notes.sources')
+                ->with('individuals.notes')
+                ->with('individuals.notes.sources')
+                ->with('individuals.sources')
+                ->with('families')
+                ->with('families.events')
+                ->with('families.events.notes')
+                ->with('families.events.notes.sources')
+                ->with('families.notes')
+                ->with('families.notes.sources')
+                ->with('families.sources')
+                ->get();
+        return Response::json($g);
     }
 
 }

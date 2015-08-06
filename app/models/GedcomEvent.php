@@ -31,6 +31,14 @@ class GedcomEvent extends Eloquent
     protected $table = 'events';
 
     /**
+     * Hidden fields in the JSON export.
+     * @var array
+     */
+    protected $hidden = array('id', 'gedcom_id', 'gedcom',
+        'indi_id', 'fami_id',
+        'created_at', 'updated_at');
+
+    /**
      * Returns the GedcomIndividual to which this GedcomEvent belongs.
      * @return GedcomIndividual
      */
@@ -46,6 +54,24 @@ class GedcomEvent extends Eloquent
     public function family()
     {
         return $this->belongsTo('GedcomFamily', 'fami_id');
+    }
+
+    /**
+     * Returns the GedcomNotes belonging to this GedcomEvent.
+     * @return Illuminate\Database\Eloquent\Collection
+     */
+    public function notes()
+    {
+        return $this->hasMany('GedcomNote', 'even_id');
+    }
+
+    /**
+     * Returns the GedcomSources belonging to this GedcomEvent.
+     * @return Illuminate\Database\Eloquent\Collection
+     */
+    public function sources()
+    {
+        return $this->hasMany('GedcomSource', 'even_id');
     }
 
 }

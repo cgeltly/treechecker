@@ -31,6 +31,13 @@ class GedcomIndividual extends Eloquent
     protected $table = 'individuals';
 
     /**
+     * Hidden fields in the JSON export.
+     * @var array
+     */
+    protected $hidden = array('id', 'gedcom_id', 'gedcom',
+        'created_at', 'updated_at');
+
+    /**
      * Returns the Gedcom to which this GedcomFamily belongs.
      * @return Gedcom
      */
@@ -84,14 +91,14 @@ class GedcomIndividual extends Eloquent
     {
         return $this->hasMany('GedcomSource', 'indi_id');
     }
-    
+
     /**
      * Returns the GedcomLifespan for this GedcomIndividual.
      * @return GedcomLifespan
      */
-    public function lifespan() 
+    public function lifespan()
     {
-        return $this->hasOne('GedcomLifespan', 'indi_id'); 
+        return $this->hasOne('GedcomLifespan', 'indi_id');
     }
 
     /**

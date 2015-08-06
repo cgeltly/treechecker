@@ -31,12 +31,29 @@ class GedcomNote extends Eloquent
     protected $table = 'notes';
 
     /**
-     * Returns the Gedcom to which this GedcomFamily belongs.
+     * Hidden fields in the JSON export.
+     * @var array
+     */
+    protected $hidden = array('id', 'gedcom_id', 'gedcom',
+        'indi_id', 'fami_id', 'even_id',
+        'created_at', 'updated_at');
+
+    /**
+     * Returns the Gedcom to which this GedcomNote belongs.
      * @return Gedcom
      */
     public function gc()
     {
         return $this->belongsTo('Gedcom', 'gedcom_id');
+    }
+
+    /**
+     * Returns the GedcomSources belonging to this GedcomNote.
+     * @return Illuminate\Database\Eloquent\Collection
+     */
+    public function sources()
+    {
+        return $this->hasMany('GedcomSource', 'note_id');
     }
 
 }

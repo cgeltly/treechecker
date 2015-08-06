@@ -47,6 +47,14 @@ class Gedcom extends Eloquent
     );
 
     /**
+     * Hidden fields in the JSON export.
+     * @var array
+     */
+    protected $hidden = array('id', 'user_id',
+        'path', 'parsed', 'error_checked',
+        'created_at', 'updated_at');
+
+    /**
      * Returns the User to which this Gedcom belongs.
      * @return User
      */
@@ -322,8 +330,8 @@ class Gedcom extends Eloquent
     {
         return DB::table('families as f')
                         ->join(DB::raw('(SELECT id, fami_id, date, est_date, event, MIN(YEAR(date)) MinDate
-                                FROM events WHERE event = "MARR" AND gedcom_id = ' . $this->id . ' ' . 
-                                'GROUP BY event, fami_id) AS e2'), 'f.id', '=', 'e2.fami_id')
+                                FROM events WHERE event = "MARR" AND gedcom_id = ' . $this->id . ' ' .
+                                        'GROUP BY event, fami_id) AS e2'), 'f.id', '=', 'e2.fami_id')
                         ->join('events as e1', 'f.indi_id_husb', '=', 'e1.indi_id')
                         ->join('events as e0', 'f.indi_id_wife', '=', 'e0.indi_id')
                         ->where('e2.event', 'MARR')
@@ -336,11 +344,7 @@ class Gedcom extends Eloquent
     public function marriageAges()
     {
         return $this->marriageAgesJoins()
-                        ->select('f.id as fami_id', 'e1.indi_id as indi_id_husb', 'e0.indi_id as indi_id_wife', 
-                                'e2.id as marr_event_id',
-                                $this->dateDiff('e1', 'marr_age_husb'), $this->dateDiff('e0', 'marr_age_wife'), 
-                                $this->estDate('e1.est_date', 'e2.est_date', 'est_date_age_husb'), 
-                                $this->estDate('e0.est_date', 'e2.est_date', 'est_date_age_wife'))
+                        ->select('f.id as fami_id', 'e1.indi_id as indi_id_husb', 'e0.indi_id as indi_id_wife', 'e2.id as marr_event_id', $this->dateDiff('e1', 'marr_age_husb'), $this->dateDiff('e0', 'marr_age_wife'), $this->estDate('e1.est_date', 'e2.est_date', 'est_date_age_husb'), $this->estDate('e0.est_date', 'e2.est_date', 'est_date_age_wife'))
                         ->get();
     }
 
@@ -401,12 +405,12 @@ class Gedcom extends Eloquent
         return $this->marriageAge()->min($this->sqlAge());
     }
 
-    /*public function marriageAges()
-    {
-        return $this->marriageAge()
-                        ->select('i.id as indi_id', 'i.sex as indi_sex', 'e1.date as indi_birth', 'f.id as fami_id', 'e2.date as fami_marriage', $this->dateDiff('e1', 'marriage_age'), $this->estDate('e1.estimate', 'e2.estimate', 'estimated'))
-                        ->get();
-    }*/
+    /* public function marriageAges()
+      {
+      return $this->marriageAge()
+      ->select('i.id as indi_id', 'i.sex as indi_sex', 'e1.date as indi_birth', 'f.id as fami_id', 'e2.date as fami_marriage', $this->dateDiff('e1', 'marriage_age'), $this->estDate('e1.estimate', 'e2.estimate', 'estimated'))
+      ->get();
+      } */
 
     /*
      * Helpers
