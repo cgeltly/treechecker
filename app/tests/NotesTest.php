@@ -34,8 +34,8 @@ class NotesTest extends TestCase
         
         // I3 has a note on an event 
         $ind3 = GedcomIndividual::GedcomKey($this->gedcom->id, 'I3')->first();
-        $this->assertEquals($ind3->notes()->count(), 1);
-        $note3 = $ind3->notes()->first();
+        $this->assertEquals($ind3->eventNotes()->count(), 1);
+        $note3 = $ind3->eventNotes()->first();
         $this->assertNotNull($note3->even_id);
     }
 
@@ -46,7 +46,8 @@ class NotesTest extends TestCase
     {
         // F1 has two notes, one of which related to an event
         $fam = GedcomFamily::GedcomKey($this->gedcom->id, 'F1')->first();
-        $this->assertEquals($fam->notes()->count(), 2);
+        $this->assertEquals($fam->notes()->count(), 1);
+        $this->assertEquals($fam->eventNotes()->count(), 1);
     }
 
     /**

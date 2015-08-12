@@ -465,11 +465,7 @@ class ParseController extends BaseController
         }
         else if (starts_with($ref, 'E'))
         {
-            $even_id = substr($ref, 1);
-            $event = GedcomEvent::find($even_id);
-            $note->even_id = $event->id;
-            $note->indi_id = $event->indi_id;
-            $note->fami_id = $event->fami_id;
+            $note->even_id = substr($ref, 1);
         }
         $note->note = $note_text;
         $note->gedcom = $gedrec;
@@ -549,11 +545,7 @@ class ParseController extends BaseController
         }
         else if (starts_with($ref, 'E'))
         {
-            $even_id = substr($ref, 1);
-            $event = GedcomEvent::find($even_id);
-            $source->even_id = $event->id;
-            $source->indi_id = $event->indi_id;
-            $source->fami_id = $event->fami_id;
+            $source->even_id = substr($ref, 1);
         }
 
         $source->gedcom = $gedrec;

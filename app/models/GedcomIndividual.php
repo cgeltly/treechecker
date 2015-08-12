@@ -84,12 +84,30 @@ class GedcomIndividual extends Eloquent
     }
 
     /**
+     * Returns the GedcomNotes belonging to this GedcomIndividual via a GedcomEvent.
+     * @return Illuminate\Database\Eloquent\Collection
+     */
+    public function eventNotes()
+    {
+        return $this->hasManyThrough('GedcomNote', 'GedcomEvent', 'indi_id', 'even_id');
+    }
+
+    /**
      * Returns the GedcomSources belonging to this GedcomIndividual.
      * @return Illuminate\Database\Eloquent\Collection
      */
     public function sources()
     {
         return $this->hasMany('GedcomSource', 'indi_id');
+    }
+
+    /**
+     * Returns the GedcomSources belonging to this GedcomIndividual via a GedcomEvent.
+     * @return Illuminate\Database\Eloquent\Collection
+     */
+    public function eventSources()
+    {
+        return $this->hasManyThrough('GedcomSource', 'GedcomEvent', 'indi_id', 'even_id');
     }
 
     /**

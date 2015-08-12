@@ -28,8 +28,8 @@ class SourcesTest extends TestCase
         
         // I3 has a source on an event 
         $ind3 = GedcomIndividual::GedcomKey($this->gedcom->id, 'I3')->first();
-        $this->assertEquals($ind3->sources()->count(), 1);
-        $source3 = $ind3->sources()->first();
+        $this->assertEquals($ind3->eventSources()->count(), 1);
+        $source3 = $ind3->eventSources()->first();
         $this->assertNotNull($source3->even_id);
     }
 

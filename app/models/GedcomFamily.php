@@ -144,12 +144,30 @@ class GedcomFamily extends Eloquent
     }
 
     /**
+     * Returns the GedcomNotes belonging to this GedcomFamily via a GedcomEvent.
+     * @return Illuminate\Database\Eloquent\Collection
+     */
+    public function eventNotes()
+    {
+        return $this->hasManyThrough('GedcomNote', 'GedcomEvent', 'fami_id', 'even_id');
+    }
+
+    /**
      * Returns the GedcomSources belonging to this GedcomFamily.
      * @return Illuminate\Database\Eloquent\Collection
      */
     public function sources()
     {
         return $this->hasMany('GedcomSource', 'fami_id');
+    }
+
+    /**
+     * Returns the GedcomSources belonging to this GedcomFamily via a GedcomEvent.
+     * @return Illuminate\Database\Eloquent\Collection
+     */
+    public function eventSources()
+    {
+        return $this->hasManyThrough('GedcomSource', 'GedcomEvent', 'fami_id', 'even_id');
     }
 
     /**
