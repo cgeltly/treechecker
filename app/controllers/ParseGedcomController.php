@@ -32,119 +32,23 @@ class ParseGedcomController extends ParseController
     {
         parent::__construct();
     }
-
-    /**
-     * Parses a Gedcom and creates parse errors when necessary.
-     * @param int $gedcom_id
-     * @return void (if finished)
-     */
+    
     public function getParse($gedcom_id)
     {
-        // Get the GEDCOM
-        $gedcom = Gedcom::findOrFail($gedcom_id);
-
-        if ($this->allowedAccess($gedcom->user_id))
-        {
-            Session::put('progress', 1);
-            Session::save();
-
-            // Delete the related individuals, families and errors
-            $gedcom->individuals()->delete();
-            $gedcom->families()->delete();
-            $gedcom->geocodes()->delete();
-            $gedcom->errors()->delete();
-            $gedcom->notes()->delete();
-
-            Session::put('progress', 2);
-            Session::save();
-
-            // Retrieve the file folder
-            $abs_storage_dir = Config::get('app.upload_dir') . $gedcom->path;
-            chdir($abs_storage_dir);
-
-            // Set some definitions
-            $this->setDefines($gedcom_id);
-
-            $filecount = 0;
-            $files = glob("*");
-            if ($files)
-            {
-                $filecount = count($files);
-            }
-
-            // Loop through the chunked files and parse/import them
-            for ($i = 1; file_exists($i); ++$i)
-            {
-                $this->importRecords($i, $gedcom_id);
-                Session::put('progress', min(floor(($i / $filecount) * 100), 99));
-                Session::save();
-            }
-
-            // Create the families in the familyMap
-            foreach ($this->familyMap as $f => $r)
-            {
-                $this->createFamily($f, $r, $gedcom_id);
-            }
-
-            // If we reached this point, and there are still notes in the noteMap, add parse errors
-            foreach ($this->noteMap as $n => $r)
-            {
-                $error = new GedcomError();
-                $error->gedcom_id = $gedcom_id;
-                $error->stage = 'parsing';
-                $error->type_broad = 'missing';
-                $error->type_specific = 'note definition';
-                $error->eval_broad = 'error';
-                $error->eval_specific = '';
-                $error->message = sprintf('No definition found for NOTE %s on %s', $n, $r);
-                $error->save();
-            }
-
-            // If we reached this point, and there are still notes in the sourceMap, add parse errors
-            foreach ($this->sourceMap as $s => $r)
-            {
-                $error = new GedcomError();
-                $error->gedcom_id = $gedcom_id;
-                $error->stage = 'parsing';
-                $error->type_broad = 'missing';
-                $error->type_specific = 'note definition';
-                $error->eval_broad = 'error';
-                $error->eval_specific = '';
-                $error->message = sprintf('No definition found for SOUR %s on %s', $s, $r);
-                $error->save();
-            }
-
-            // Set the file as parsed, but not checked for errors
-            $gedcom->parsed = true;
-            $gedcom->error_checked = false;
-            $gedcom->save();
-
-            Session::put('progress', 100);
-            Session::save();
-
-            return;
-        }
-        else
-        {
-            return Response::make('Unauthorized', 401);
-        }
+        parent::getParse($gedcom_id);
     }
-
-    /**
-     * Returns the progress of the current parse session. 
-     * @return Response the progress in JSON format
-     */
+    
     public function getProgress()
     {
-        $progress = Session::has('progress') ? Session::get('progress') : 0;
-        return Response::json(array($progress));
+        parent::getProgress();
     }
 
     /**
-     * Set some definitions used during parsing. 
+     * Actions before parsing: 
+     * - Set some definitions used during parsing. 
      * @param int $gedcom_id
      */
-    private function setDefines($gedcom_id)
+    protected function doBeforeParse($gedcom_id)
     {
         if (!defined('WT_GED_ID'))
         {
@@ -158,34 +62,62 @@ class ParseGedcomController extends ParseController
             define('WT_UTF8_RLM', "\xE2\x80\x8F");
         }
     }
-
+    
     /**
-     * Imports all records, per 0 line. 
-     * @param string $file
+     * Actions after parsing: 
+     * - Create the families in the familyMap
+     * - Add parse errors for non-matched notes in the noteMap
+     * - Add parse errors for non-matched sources in the sourceMap
      * @param int $gedcom_id
      */
-    private function importRecords($file, $gedcom_id)
+    protected function doAfterParse($gedcom_id)
     {
-        // Retrieve the contents of the file
-        $gedcom = file_get_contents($file);
+        // Create the families in the familyMap
+        foreach ($this->familyMap as $f => $r)
+        {
+            $this->createFamily($f, $r, $gedcom_id);
+        }
 
-        // Allow 3 minutes of execution time
-        set_time_limit(180);
+        // If we reached this point, and there are still notes in the noteMap, add parse errors
+        foreach ($this->noteMap as $n => $r)
+        {
+            $error = new GedcomError();
+            $error->gedcom_id = $gedcom_id;
+            $error->stage = 'parsing';
+            $error->type_broad = 'missing';
+            $error->type_specific = 'note definition';
+            $error->eval_broad = 'error';
+            $error->eval_specific = '';
+            $error->message = sprintf('No definition found for NOTE %s on %s', $n, $r);
+            $error->save();
+        }
 
-        // Query log is save in memory, so we need to disable it for large file parsing
-        DB::connection()->disableQueryLog();
+        // If we reached this point, and there are still notes in the sourceMap, add parse errors
+        foreach ($this->sourceMap as $s => $r)
+        {
+            $error = new GedcomError();
+            $error->gedcom_id = $gedcom_id;
+            $error->stage = 'parsing';
+            $error->type_broad = 'missing';
+            $error->type_specific = 'note definition';
+            $error->eval_broad = 'error';
+            $error->eval_specific = '';
+            $error->message = sprintf('No definition found for SOUR %s on %s', $s, $r);
+            $error->save();
+        }
+    }
 
-        // Start the transaction
-        DB::beginTransaction();
-
-        // Split records per 0 line and import
+    /**
+     * Split records per 0 line and import.
+     * @param integer $gedcom_id
+     * @param string $gedcom
+     */
+    protected function doImport($gedcom_id, $gedcom)
+    {
         foreach (preg_split('/\n+(?=0)/', $gedcom) as $record)
         {
             $this->importRecord($record, $gedcom_id);
         }
-
-        // End the transaction
-        DB::commit();
     }
 
     /**
@@ -358,19 +290,21 @@ class ParseGedcomController extends ParseController
         // Find the husband and wife in the Gedcom
         $husb = $this->getIndividualKey($gedrec, 'HUSB');
         $wife = $this->getIndividualKey($gedrec, 'WIFE');
+        $husb_ind = $this->retrieveIndividual($gedcom_id, $husb);
+        $wife_ind = $this->retrieveIndividual($gedcom_id, $wife);
 
         // Create the GedcomFamily
         $family = new GedcomFamily();
         $family->gedcom_id = $gedcom_id;
-        $family->indi_id_husb = $this->getIndividualId($gedcom_id, $husb);
-        $family->indi_id_wife = $this->getIndividualId($gedcom_id, $wife);
+        $family->indi_id_husb = $husb_ind ? $husb_ind->id : NULL;
+        $family->indi_id_wife = $wife_ind ? $wife_ind->id : NULL;
         $family->gedcom_key = $xref;
         $family->gedcom = $gedrec;
         $family->save();
 
         // Check the gender of husband and wife
-        $this->checkGender($gedcom_id, $family->id, $family->indi_id_husb, 'm');
-        $this->checkGender($gedcom_id, $family->id, $family->indi_id_wife, 'f');
+        $this->checkGender($gedcom_id, $family->id, $husb_ind, 'm');
+        $this->checkGender($gedcom_id, $family->id, $wife_ind, 'f');
 
         // Process the GedcomChildren and GedcomEvents
         $this->processChildren($record, $gedcom_id, $family);

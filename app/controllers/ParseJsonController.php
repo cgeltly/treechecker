@@ -29,103 +29,57 @@ class ParseJsonController extends ParseController
         parent::__construct();
     }
 
-    /**
-     * Parses a Gedcom and creates parse errors when necessary.
-     * @param int $gedcom_id
-     * @return void (if finished)
-     */
     public function getParse($gedcom_id)
     {
-        // Get the GEDCOM
-        $gedcom = Gedcom::findOrFail($gedcom_id);
+        parent::getParse($gedcom_id);
+    }
 
-        if ($this->allowedAccess($gedcom->user_id))
-        {
-            Session::put('progress', 1);
-            Session::save();
-
-            // Delete the related individuals, families and errors
-            $gedcom->individuals()->delete();
-            $gedcom->families()->delete();
-            $gedcom->geocodes()->delete();
-            $gedcom->errors()->delete();
-            $gedcom->notes()->delete();
-
-            Session::put('progress', 2);
-            Session::save();
-
-            // Retrieve the file folder
-            $abs_storage_dir = Config::get('app.upload_dir') . $gedcom->path;
-            chdir($abs_storage_dir);
-
-            $filecount = 0;
-            $files = glob("*");
-            if ($files)
-            {
-                $filecount = count($files);
-            }
-
-            // Loop through the chunked files and parse/import them
-            for ($i = 1; file_exists($i); ++$i)
-            {
-                $this->importRecords($i, $gedcom_id);
-                Session::put('progress', min(floor(($i / $filecount) * 100), 99));
-                Session::save();
-            }
-
-            // Set the file as parsed, but not checked for errors
-            $gedcom->parsed = true;
-            $gedcom->error_checked = false;
-            $gedcom->save();
-
-            Session::put('progress', 100);
-            Session::save();
-
-            return;
-        }
-        else
-        {
-            return Response::make('Unauthorized', 401);
-        }
+    public function getProgress()
+    {
+        parent::getProgress();
     }
 
     /**
-     * Imports all records, per 0 line. 
-     * @param string $file
+     * Actions before parsing: 
+     * - none
      * @param int $gedcom_id
      */
-    private function importRecords($file, $gedcom_id)
+    protected function doBeforeParse($gedcom_id)
     {
-        // Retrieve the contents of the file
-        $gedcom = file_get_contents($file);
+        return;
+    }
 
-        // Allow 3 minutes of execution time
-        set_time_limit(180);
+    /**
+     * Actions after parsing: 
+     * - none
+     * @param int $gedcom_id
+     */
+    protected function doAfterParse($gedcom_id)
+    {
+        return;
+    }
 
-        // Query log is save in memory, so we need to disable it for large file parsing
-        DB::connection()->disableQueryLog();
-
-        // Start the transaction
-        DB::beginTransaction();
-
+    /**
+     * Decode the JSON and start the importing.
+     * @param integer $gedcom_id
+     * @param string $gedcom
+     */
+    protected function doImport($gedcom_id, $gedcom)
+    {
         // Decode the JSON 
         $json = json_decode($gedcom);
         $g = $json[0];
-        //updateGedcom($gedcom_id);
-        $this->createSystem($gedcom_id, $g->system);
 
+        // Create GedcomSystems, GedcomIndividuals and GedcomFamilies
+        $this->createSystem($gedcom_id, $g->system);
         foreach ($g->individuals as $i)
         {
             $this->createIndividual($gedcom_id, $i);
         }
-
         foreach ($g->families as $f)
         {
             $this->createFamily($gedcom_id, $f);
         }
-        
-        // End the transaction
-        DB::commit();
     }
 
     /**
@@ -144,6 +98,11 @@ class ParseJsonController extends ParseController
         $system->save();
     }
 
+    /**
+     * Creates a GedcomIndividual from the JSON input
+     * @param integer $gedcom_id
+     * @param object $i
+     */
     private function createIndividual($gedcom_id, $i)
     {
         $events = array();
@@ -186,13 +145,21 @@ class ParseJsonController extends ParseController
         }
     }
 
+    /**
+     * Creates a GedcomFamily from the JSON input
+     * @param integer $gedcom_id
+     * @param object $f
+     */
     private function createFamily($gedcom_id, $f)
     {
+        $husb_ind = $this->retrieveIndividual($gedcom_id, $f->husb_key);
+        $wife_ind = $this->retrieveIndividual($gedcom_id, $f->wife_key);
+        
         $family = new GedcomFamily();
         $family->gedcom_id = $gedcom_id;
         $family->gedcom_key = $f->gedcom_key;
-        $family->indi_id_husb = $this->getIndividualId($gedcom_id, $f->husb_key);
-        $family->indi_id_wife = $this->getIndividualId($gedcom_id, $f->wife_key);
+        $family->indi_id_husb = $husb_ind ? $husb_ind->id : NULL;
+        $family->indi_id_wife = $wife_ind ? $wife_ind->id : NULL;
         $family->save();
 
         foreach ($f->children_keys as $c)
@@ -212,16 +179,31 @@ class ParseJsonController extends ParseController
             $this->createSource($gedcom_id, $s, NULL, $family->id);
         }
     }
-    
+
+    /**
+     * Creates a GedcomChild from the JSON input
+     * @param integer $gedcom_id
+     * @param object $c
+     * @param integer $fami_id
+     */
     private function createChild($gedcom_id, $c, $fami_id)
     {
+        $indi = $this->retrieveIndividual($gedcom_id, $c->gedcom_key);
+        
         $child = new GedcomChild();
         $child->gedcom_id = $gedcom_id;
         $child->fami_id = $fami_id;
-        $child->indi_id = $this->getIndividualId($gedcom_id, $c->gedcom_key);
+        $child->indi_id = $indi ? $indi->id : NULL;
         $child->save();
     }
 
+    /**
+     * Creates a GedcomEvent from the JSON input
+     * @param integer $gedcom_id
+     * @param object $e
+     * @param integer $indi_id
+     * @param integer $fami_id
+     */
     private function createEvent($gedcom_id, $e, $indi_id = NULL, $fami_id = NULL)
     {
         $notes = array();
@@ -259,6 +241,14 @@ class ParseJsonController extends ParseController
         }
     }
 
+    /**
+     * Creates a GedcomNote from the JSON input
+     * @param integer $gedcom_id
+     * @param object $n
+     * @param integer $indi_id
+     * @param integer $fami_id
+     * @param integer $even_id
+     */
     private function createNote($gedcom_id, $n, $indi_id = NULL, $fami_id = NULL, $even_id = NULL)
     {
         $sources = array();
@@ -289,6 +279,15 @@ class ParseJsonController extends ParseController
         }
     }
 
+    /**
+     * Creates a GedcomSource from the JSON input
+     * @param integer $gedcom_id
+     * @param object $s
+     * @param integer $indi_id
+     * @param integer $fami_id
+     * @param integer $even_id
+     * @param integer $note_id
+     */
     private function createSource($gedcom_id, $s, $indi_id = NULL, $fami_id = NULL, $even_id = NULL, $note_id = NULL)
     {
         $source = new GedcomSource();

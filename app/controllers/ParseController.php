@@ -34,20 +34,125 @@ abstract class ParseController extends BaseController
 
     /**
      * Parses a Gedcom and creates parse errors when necessary.
-     * @param int $gedcom_id
+     * @param integer $gedcom_id
      * @return void (if finished)
      */
-    abstract protected function getParse($gedcom_id);
+    public function getParse($gedcom_id)
+    {
+        // Get the GEDCOM
+        $gedcom = Gedcom::findOrFail($gedcom_id);
+
+        if ($this->allowedAccess($gedcom->user_id))
+        {
+            Session::put('progress', 1);
+            Session::save();
+
+            // Delete the related individuals, families and errors
+            $gedcom->individuals()->delete();
+            $gedcom->families()->delete();
+            $gedcom->geocodes()->delete();
+            $gedcom->errors()->delete();
+            $gedcom->notes()->delete();
+
+            Session::put('progress', 2);
+            Session::save();
+
+            // Retrieve the file folder
+            $abs_storage_dir = Config::get('app.upload_dir') . $gedcom->path;
+            chdir($abs_storage_dir);
+
+            // Do before actions
+            $this->doBeforeParse($gedcom_id);
+
+            $filecount = 0;
+            $files = glob("*");
+            if ($files)
+            {
+                $filecount = count($files);
+            }
+
+            // Loop through the chunked files and parse/import them
+            for ($i = 1; file_exists($i); ++$i)
+            {
+                $this->importRecords($i, $gedcom_id);
+                Session::put('progress', min(floor(($i / $filecount) * 100), 99));
+                Session::save();
+            }
+
+            // Do after actions
+            $this->doAfterParse($gedcom_id);
+
+            // Set the file as parsed, but not checked for errors
+            $gedcom->parsed = true;
+            $gedcom->error_checked = false;
+            $gedcom->save();
+
+            Session::put('progress', 100);
+            Session::save();
+
+            return;
+        }
+        else
+        {
+            return Response::make('Unauthorized', 401);
+        }
+    }
+
+    abstract protected function doBeforeParse($gedcom_id);
+
+    abstract protected function doAfterParse($gedcom_id);
+
+    /**
+     * Returns the progress of the current parse session. 
+     * @return Response the progress in JSON format
+     */
+    public function getProgress()
+    {
+        $progress = Session::has('progress') ? Session::get('progress') : 0;
+        return Response::json(array($progress));
+    }
+
+    /**
+     * Imports all records of a file
+     * @param string $file
+     * @param integer $gedcom_id
+     */
+    protected function importRecords($file, $gedcom_id)
+    {
+        // Retrieve the contents of the file
+        $gedcom = file_get_contents($file);
+
+        // Allow 3 minutes of execution time
+        set_time_limit(180);
+
+        // Query log is save in memory, so we need to disable it for large file parsing
+        DB::connection()->disableQueryLog();
+
+        // Start the transaction
+        DB::beginTransaction();
+
+        // Start the import
+        $this->doImport($gedcom_id, $gedcom);
+
+        // End the transaction
+        DB::commit();
+    }
+
+    /**
+     * Starts the file-specific (GEDCOM, JSON) import.
+     * @param integer $gedcom_id
+     * @param string $gedcom
+     */
+    abstract protected function doImport($gedcom_id, $gedcom);
 
     /**
      * Looks up a GedcomIndividual by key. 
      * Creates a GedcomError if not found. 
-     * Returns the id (or NULL if not found) of the GedcomIndividual
-     * @param int $gedcom_id
+     * @param integer $gedcom_id
      * @param string $gedcom_key
-     * @return int
+     * @return GedcomIndividual
      */
-    protected function getIndividualId($gedcom_id, $gedcom_key)
+    protected function retrieveIndividual($gedcom_id, $gedcom_key)
     {
         if (!$gedcom_key)
         {
@@ -69,7 +174,7 @@ abstract class ParseController extends BaseController
             $error->save();
         }
 
-        return $ind ? $ind->id : NULL;
+        return $ind;
     }
 
 }
