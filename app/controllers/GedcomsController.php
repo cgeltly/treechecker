@@ -53,7 +53,7 @@ class GedcomsController extends BaseController
     }
 
     /*
-     * Show a list of all unparsed gedcoms.
+     * Show a list of all unchecked gedcoms.
      */
 
     public function getUnchecked()
@@ -438,17 +438,21 @@ class GedcomsController extends BaseController
         $delete = HTML::link('gedcoms/delete/' . $row->gc_id, '', array(
                     'class' => 'glyphicon glyphicon-trash',
                     'title' => Lang::get('common/actions.delete')));
-        $parse = HTML::link('parse/parse/' . $row->gc_id, '', array(
+        $p = ends_with($row->file_name, 'json') ? 'json_parse' : 'parse';
+        $parse = HTML::link($p . '/parse/' . $row->gc_id, '', array(
                     'class' => 'glyphicon glyphicon-save parse',
                     'title' => Lang::get('gedcom/gedcoms/actions.parse')));
         $errors = HTML::link('errors/gedcom/' . $row->gc_id, '', array(
                     'class' => 'glyphicon glyphicon-warning-sign',
                     'title' => Lang::get('gedcom/errors/table.errors')));
+        $export = HTML::link('gedcoms/json/' . $row->gc_id, '', array(
+                    'class' => 'glyphicon glyphicon-export',
+                    'title' => Lang::get('gedcom/gedcoms/actions.export_as_json')));
 
         $result = array($edit, $delete, $parse);
         if ($row->parsed)
         {
-            $result = array_merge(array($show), $result, array($errors));
+            $result = array_merge(array($show), $result, array($errors), array($export));
         }
         return implode(' ', $result);
     }

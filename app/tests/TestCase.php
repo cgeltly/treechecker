@@ -77,7 +77,7 @@ class TestCase extends Illuminate\Foundation\Testing\TestCase
         $gedcom = Gedcom::where('file_name', $filename)->first();
 
         // Parse the file
-        $this->action('GET', 'ParseController@getParse', array('id' => $gedcom->id));
+        $this->action('GET', 'ParseGedcomController@getParse', array('id' => $gedcom->id));
 
         return $gedcom->find($gedcom->id);
     }
