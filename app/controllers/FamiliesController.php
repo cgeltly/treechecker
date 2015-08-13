@@ -166,7 +166,29 @@ class FamiliesController extends BaseController
      */
     public function getJson($id)
     {
-        $f = GedcomFamily::where('id', $id)
+        return Response::json($this->serialize($id));
+    }
+
+    /**
+     * Serializes a GedcomFamily to XML 
+     * @param integer $id
+     * @return XML
+     */
+    public function getXml($id)
+    {
+        $xml = new SimpleXMLElement("<?xml version=\"1.0\"?><families></families>");
+        $xml_string = $this->array_to_xml($this->serialize($id)->toArray(), $xml);
+        return Response::make($xml_string)->header('Content-Type', 'application/xml');
+    }
+
+    /**
+     * Serializes a GedcomFamily
+     * @param integer $id
+     * @return Illuminate\Database\Eloquent\Collection
+     */
+    private function serialize($id)
+    {
+        return GedcomFamily::where('id', $id)
                 ->with('events')
                 ->with('events.notes')
                 ->with('events.notes.sources')
@@ -174,7 +196,6 @@ class FamiliesController extends BaseController
                 ->with('notes.sources')
                 ->with('sources')
                 ->get();
-        return Response::json($f);
     }
 
 }

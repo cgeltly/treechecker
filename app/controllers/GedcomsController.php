@@ -500,24 +500,45 @@ class GedcomsController extends BaseController
      */
     public function getJson($id)
     {
-        $g = Gedcom::where('id', $id)
-                ->with('system')
-                ->with('individuals')
-                ->with('individuals.events')
-                ->with('individuals.events.notes')
-                ->with('individuals.events.notes.sources')
-                ->with('individuals.notes')
-                ->with('individuals.notes.sources')
-                ->with('individuals.sources')
-                ->with('families')
-                ->with('families.events')
-                ->with('families.events.notes')
-                ->with('families.events.notes.sources')
-                ->with('families.notes')
-                ->with('families.notes.sources')
-                ->with('families.sources')
-                ->get();
-        return Response::json($g);
+        return Response::json($this->serialize($id));
+    }
+
+    /**
+     * Serializes a Gedcom to XML 
+     * @param integer $id
+     * @return XML
+     */
+    public function getXml($id)
+    {
+        $xml = new SimpleXMLElement("<?xml version=\"1.0\"?><gedcoms></gedcoms>");
+        $xml_string = $this->array_to_xml($this->serialize($id)->toArray(), $xml);
+        return Response::make($xml_string)->header('Content-Type', 'application/xml');
+    }
+
+    /**
+     * Serializes a Gedcom
+     * @param integer $id
+     * @return Illuminate\Database\Eloquent\Collection
+     */
+    private function serialize($id)
+    {
+        return Gedcom::where('id', $id)
+                        ->with('system')
+                        ->with('individuals')
+                        ->with('individuals.events')
+                        ->with('individuals.events.notes')
+                        ->with('individuals.events.notes.sources')
+                        ->with('individuals.notes')
+                        ->with('individuals.notes.sources')
+                        ->with('individuals.sources')
+                        ->with('families')
+                        ->with('families.events')
+                        ->with('families.events.notes')
+                        ->with('families.events.notes.sources')
+                        ->with('families.notes')
+                        ->with('families.notes.sources')
+                        ->with('families.sources')
+                        ->get();
     }
 
 }

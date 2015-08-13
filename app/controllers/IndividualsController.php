@@ -334,15 +334,36 @@ class IndividualsController extends BaseController
      */
     public function getJson($id)
     {
-        $i = GedcomIndividual::where('id', $id)
-                ->with('events')
-                ->with('events.notes')
-                ->with('events.notes.sources')
-                ->with('notes')
-                ->with('notes.sources')
-                ->with('sources')
-                ->get();
-        return Response::json($i);
+        return Response::json($this->serialize($id));
+    }
+
+    /**
+     * Serializes a GedcomIndividual to XML 
+     * @param integer $id
+     * @return XML
+     */
+    public function getXml($id)
+    {
+        $xml = new SimpleXMLElement("<?xml version=\"1.0\"?><individuals></individuals>");
+        $xml_string = $this->array_to_xml($this->serialize($id)->toArray(), $xml);
+        return Response::make($xml_string)->header('Content-Type', 'application/xml');
+    }
+
+    /**
+     * Serializes a GedcomIndividual
+     * @param integer $id
+     * @return Illuminate\Database\Eloquent\Collection
+     */
+    private function serialize($id)
+    {
+        return GedcomIndividual::where('id', $id)
+                        ->with('events')
+                        ->with('events.notes')
+                        ->with('events.notes.sources')
+                        ->with('notes')
+                        ->with('notes.sources')
+                        ->with('sources')
+                        ->get();
     }
 
 }

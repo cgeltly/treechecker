@@ -58,4 +58,42 @@ class BaseController extends Controller
         return $user_id == Auth::user()->id || Auth::user()->role == 'admin';
     }
 
+    /**
+     * Turns an array into XML. 
+     * Copied from https://github.com/pyrello/laravel-xml/blob/master/src/Pyrello/LaravelXml/XmlTools.php
+     * @param array $arr
+     * @param SimpleXMLElement $xml
+     * @return string
+     */
+    protected function array_to_xml($arr, $xml)
+    {
+        foreach ($arr as $key => $item)
+        {
+            if (is_array($item))
+            {
+                // If the $key is numeric, we convert it to the singular form
+                // of the element name it is contained in
+                if (is_numeric($key))
+                {
+                    $key = str_singular($xml->getName());
+                }
+                $node = $xml->addChild($key);
+                $this->array_to_xml($item, $node);
+            }
+            else
+            {
+                // If the item is a boolean, convert it to a string, so that it shows up
+                if (is_bool($item))
+                {
+                    $item = ($item) ? 'true' : 'false';
+                }
+                // We use the $xml->{$key} form to add the item because this causes
+                // conversion of '&' => '&amp;
+                $xml->{$key} = $item;
+            }
+        }
+
+        return $xml->asXml();
+    }
+
 }
