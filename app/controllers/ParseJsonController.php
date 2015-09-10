@@ -29,16 +29,6 @@ class ParseJsonController extends ParseController
         parent::__construct();
     }
 
-    public function getParse($gedcom_id)
-    {
-        parent::getParse($gedcom_id);
-    }
-
-    public function getProgress()
-    {
-        parent::getProgress();
-    }
-
     /**
      * Actions before parsing: 
      * - none
