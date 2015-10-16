@@ -252,8 +252,8 @@ class ParseGedcomController extends ParseController
         $record = new WT_Individual($xref, $gedrec, null, $gedcom_id);
 
         $name = $record->getAllNames()[0];
-        $givn = trim($name["givn"]);
-        $surname = trim($name["surname"]);
+        $givn = utf8_encode(trim($name["givn"]));
+        $surname = utf8_encode(trim($name["surname"]));
 
         $individual = new GedcomIndividual();
         $individual->gedcom_id = $gedcom_id;
@@ -650,7 +650,7 @@ class ParseGedcomController extends ParseController
 
         $geocode = new GedcomGeocode();
         $geocode->gedcom_id = $gedcom_id;
-        $geocode->place = $place;
+        $geocode->place = utf8_encode($place);
         $geocode->lati = $latitude;
         $geocode->long = $longitude;
         $geocode->gedcom = $gedrec;
@@ -797,7 +797,7 @@ class ParseGedcomController extends ParseController
                     'date' => $date ? $date['date'] : NULL,
                     'est_date' => $date ? $date['est_date'] : NULL,
                     'datestring' => $date ? $date['string'] : NULL,
-                    'place' => $place,
+                    'place' => utf8_encode($place),
                     'lati' => $latitude,
                     'long' => $longitude,
                     'gedcom' => $fact->getGedcom(),
