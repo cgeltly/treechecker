@@ -55,6 +55,7 @@ class ParseGedcomController extends ParseController
     
     /**
      * Actions after parsing: 
+     * - Enter place names from Events table into the Geocodes table
      * - Create the families in the familyMap
      * - Add parse errors for non-matched notes in the noteMap
      * - Add parse errors for non-matched sources in the sourceMap
@@ -62,6 +63,36 @@ class ParseGedcomController extends ParseController
      */
     protected function doAfterParse($gedcom_id)
     {
+
+        //insert place names and coordinates from the events table into geocodes table
+        $eventPlaces = $this->eventPlaces($gedcom_id);
+
+        foreach ($eventPlaces as $eventPlace)
+        {
+            $geocode = new GedcomGeocode();
+            $geocode->gedcom_id = $eventPlace->gedcom_id;
+            $geocode->place = $eventPlace->place;
+            $geocode->town = null;
+            $geocode->region = null;
+            $geocode->country = null;
+            $geocode->lati = $eventPlace->lati;
+            $geocode->long = $eventPlace->long;
+            $geocode->checked = 0;
+            $geocode->gedcom = 'See events table';
+            $geocode->save();
+        }        
+
+        //update the events table geo_id with the geocodes table id 
+        //based on unique place, latitude and longitude 
+        DB::statement("update `events` as `e` 
+                        inner join `geocodes` as `g` 
+                        on `e`.`place` <=> `g`.`place` 
+                            AND `e`.`lati` <=> `g`.`lati`
+                            AND `e`.`long` <=> `g`.`long`                            
+                        set `e`.`geo_id` = `g`.`id`
+                        where `e`.`gedcom_id` = $gedcom_id");
+
+        
         // Create the families in the familyMap
         foreach ($this->familyMap as $f => $r)
         {
@@ -1034,7 +1065,17 @@ class ParseGedcomController extends ParseController
         }
         return $result;
     }
-
+    
+    // Run a group by query to get unique place names from the events table.
+    private function eventPlaces($gedcom_id)
+    {
+        return DB::table('events')
+                        ->select('gedcom_id', 'id', 'place', 'lati', 'long')
+                        ->where('gedcom_id', $gedcom_id)
+                        ->groupBy('place', 'lati', 'long')
+                        ->get();
+    }    
+    
     /**
      * Checks whether the given husband/wife is actually male/female. 
      * If not, a GedcomError will be created.

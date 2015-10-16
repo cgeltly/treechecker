@@ -278,7 +278,8 @@ class Gedcom extends Eloquent
     public function allLifespans()
     {
         return $this->lifespanJoins()
-                        ->select('i.id as indi_id', 'e1.id as birth_event_id', 'e2.id as death_event_id', $this->dateDiff('e1', 'lifespan'), $this->estDate('e1.est_date', 'e2.est_date', 'est_date'))
+                        ->select('i.id as indi_id', 'e1.id as birth_event_id', 'e2.id as death_event_id', $this->dateDiff('e1', 'lifespan'), 
+                                $this->estDate('e1.est_date', 'e2.est_date', 'est_date'))
                         ->get();
     }
 
@@ -323,9 +324,10 @@ class Gedcom extends Eloquent
     }
 
     /*
-     * Marriage age
+     * Marriage ages
      */
 
+    // build the stats_marriages table
     public function marriageAgesJoins()
     {
         return DB::table('families as f')
@@ -337,17 +339,93 @@ class Gedcom extends Eloquent
                         ->where('e2.event', 'MARR')
                         ->where('e1.event', 'BIRT')
                         ->where('e0.event', 'BIRT')
-                        ->whereRaw('((e1.date IS NOT NULL OR e0.date IS NOT NULL) AND e2.date IS NOT NULL) ')
                         ->where('f.gedcom_id', $this->id);
     }
 
     public function marriageAges()
     {
         return $this->marriageAgesJoins()
-                        ->select('f.id as fami_id', 'e1.indi_id as indi_id_husb', 'e0.indi_id as indi_id_wife', 'e2.id as marr_event_id', $this->dateDiff('e1', 'marr_age_husb'), $this->dateDiff('e0', 'marr_age_wife'), $this->estDate('e1.est_date', 'e2.est_date', 'est_date_age_husb'), $this->estDate('e0.est_date', 'e2.est_date', 'est_date_age_wife'))
+                        ->select('f.id as fami_id', 'e1.indi_id as indi_id_husb', 'e0.indi_id as indi_id_wife', 'e2.id as marr_event_id', 
+                                $this->dateDiff('e1', 'marr_age_husb'), $this->dateDiff('e0', 'marr_age_wife'),
+                                $this->husbIdCnt('marr_cnt_husb'), $this->wifeIdCnt('marr_cnt_husb'),
+                                $this->estDate('e1.est_date', 'e2.est_date', 'est_date_age_husb'), 
+                                $this->estDate('e0.est_date', 'e2.est_date', 'est_date_age_wife'))
                         ->get();
     }
 
+    
+    
+    // For extracting data from the stats_marriages table
+    public function marriageAge()
+    {
+        return DB::table('stats_marriages')
+                        ->select('gedcom_id', 'marr_event_id', 'fami_id', 'indi_id_husb', 'indi_id_wife',
+                                'marr_age_husb', 'marr_age_wife', 'est_date_age_husb', 'est_date_age_wife')
+                        ->where('gedcom_id', $this->id);
+    }
+        
+    public function marriageAgeHusbLessThan($age)
+    {
+        return $this->marriageAge()
+                        ->where('marr_age_husb', '<' , $age)
+                        ->get();
+    }
+
+    public function marriageAgeWifeLessThan($age)
+    {
+        return $this->marriageAge()
+                        ->where('marr_age_wife', '<' , $age)
+                        ->get();
+    }    
+    
+    public function cntMarriageAge($spouse)
+    {
+        if($spouse == 'husb')
+        {        
+            return $this->marriageAge()->whereNotNull('marr_age_husb')->count();
+        }
+        elseif($spouse == 'wife')
+        {        
+            return $this->marriageAge()->whereNotNull('marr_age_wife')->count();
+        }
+    }    
+    
+    public function avgMarriageAge($spouse)
+    {
+        if($spouse == 'husb')
+        {        
+            return $this->marriageAge()->avg('marr_age_husb');
+        }
+        elseif($spouse == 'wife')
+        {        
+            return $this->marriageAge()->avg('marr_age_wife');
+        }
+    }
+
+    public function maxMarriageAge($spouse)
+    {
+        if($spouse == 'husb')
+        {        
+            return $this->marriageAge()->max('marr_age_husb');
+        }
+        elseif($spouse == 'wife')
+        {        
+            return $this->marriageAge()->max('marr_age_wife');
+        }
+    }
+
+    public function minMarriageAge($spouse)
+    {
+        if($spouse == 'husb')
+        {        
+            return $this->marriageAge()->min('marr_age_husb');
+        }
+        elseif($spouse == 'wife')
+        {        
+            return $this->marriageAge()->min('marr_age_wife');
+        }
+    }
+    
     /*
      * Spousal age gap
      */
@@ -369,48 +447,6 @@ class Gedcom extends Eloquent
                         ->havingRaw('ABS(age) >= ?', array($age))
                         ->get();
     }
-
-    /*
-     * Marriage ages
-     */
-
-    public function marriageAge()
-    {
-        return DB::table('individuals as i')
-                        ->join('families as f', function($join)
-                        {
-                            $join->on('f.indi_id_husb', '=', 'i.id')->orOn('f.indi_id_wife', '=', 'i.id');
-                        })
-                        ->join('events as e1', 'e1.indi_id', '=', 'i.id')
-                        ->join('events as e2', 'e2.fami_id', '=', 'f.id')
-                        ->where('e1.event', 'BIRT')
-                        ->where('e2.event', 'MARR')
-                        ->whereNotNull('e1.date')
-                        ->whereNotNull('e2.date')
-                        ->where('i.gedcom_id', $this->id);
-    }
-
-    public function avgMarriageAge()
-    {
-        return $this->marriageAge()->avg($this->sqlAge());
-    }
-
-    public function maxMarriageAge()
-    {
-        return $this->marriageAge()->max($this->sqlAge());
-    }
-
-    public function minMarriageAge()
-    {
-        return $this->marriageAge()->min($this->sqlAge());
-    }
-
-    /* public function marriageAges()
-      {
-      return $this->marriageAge()
-      ->select('i.id as indi_id', 'i.sex as indi_sex', 'e1.date as indi_birth', 'f.id as fami_id', 'e2.date as fami_marriage', $this->dateDiff('e1', 'marriage_age'), $this->estDate('e1.estimate', 'e2.estimate', 'estimated'))
-      ->get();
-      } */
 
     /*
      * Helpers
@@ -454,4 +490,20 @@ class Gedcom extends Eloquent
                         . ($as ? ' AS ' . $as : ''));
     }
 
+    /**
+     * Count marriages
+     */
+    private function husbIdCnt()
+    {
+        return DB::raw('0 AS husb_age_cnt');
+    }    
+
+    /**
+     * Count marriages
+     */
+    private function wifeIdCnt()
+    {
+        return DB::raw('0 AS wife_age_cnt');
+    } 
+    
 }

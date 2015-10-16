@@ -23,6 +23,8 @@ class CreateStatsMarriagesTable extends Migration
             $table->unsignedInteger('fami_id');
             $table->unsignedInteger('indi_id_husb')->nullable();
             $table->unsignedInteger('indi_id_wife')->nullable();
+            $table->unsignedInteger('marr_cnt_husb')->nullable();
+            $table->unsignedInteger('marr_cnt_wife')->nullable();
             $table->unsignedInteger('marr_age_husb')->nullable();
             $table->unsignedInteger('marr_age_wife')->nullable();
             $table->boolean('est_date_age_husb')->nullable();

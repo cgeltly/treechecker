@@ -73,5 +73,14 @@ class GedcomEvent extends Eloquent
     {
         return $this->hasMany('GedcomSource', 'even_id');
     }
+    
+    /**
+     * Returns the GedcomGeocode to which this GedcomEvent belongs.
+     * @return Illuminate\Database\Eloquent\Collection
+     */
+    public function geocode()
+    {
+        return $this->belongsTo('GedcomGeocode', 'geo_id');
+    }
 
 }

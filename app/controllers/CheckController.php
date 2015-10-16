@@ -74,7 +74,10 @@ class CheckController extends BaseController
         $this->checkEventDates($gedcom);
         // Check whether childs are listed in multiple families
         $this->checkMultipleFamilies($gedcom);
-
+        // Check marriage ages
+        $this->checkHusbMarriageAges($gedcom);
+        $this->checkWifeMarriageAges($gedcom);
+                
         // End the transaction
         DB::commit();
     }
@@ -248,6 +251,50 @@ class CheckController extends BaseController
     }
 
     /**
+     * Checks the marriage age of husbands, creates errors when (probably) incorrect.
+     * @param Gedcom $gedcom
+     */
+    private function checkHusbMarriageAges($gedcom)
+    {
+        foreach ($gedcom->marriageAgeHusbLessThan(12) as $f)
+        {
+            $error = new GedcomError();
+            $error->gedcom_id = $gedcom->id;
+            $error->fami_id = $f->fami_id;
+            $error->indi_id = $f->indi_id_husb;
+            $error->type_broad = 'marriage age';
+            $error->type_specific = 'err: < 12';
+            $error->eval_broad = 'error';
+            $error->eval_specific = '';
+            $error->message = sprintf('Marriage age of ' . ($f->marr_age_husb) . ' years for husband '
+                    . $f->indi_id_husb . ' in family ' . ($f->fami_id) . '.');
+            $error->save();
+        }
+    }    
+    
+        /**
+     * Checks the marriage age of wives, creates errors when (probably) incorrect.
+     * @param Gedcom $gedcom
+     */
+    private function checkWifeMarriageAges($gedcom)
+    {
+        foreach ($gedcom->marriageAgeWifeLessThan(10) as $f)
+        {
+            $error = new GedcomError();
+            $error->gedcom_id = $gedcom->id;
+            $error->fami_id = $f->fami_id;
+            $error->indi_id = $f->indi_id_wife;
+            $error->type_broad = 'marriage age';
+            $error->type_specific = 'err: < 10';
+            $error->eval_broad = 'error';
+            $error->eval_specific = '';
+            $error->message = sprintf('Marriage age of ' . ($f->marr_age_wife) . ' years for wife '
+                    . $f->indi_id_wife . ' in family ' . ($f->fami_id) . '.');
+            $error->save();
+        }
+    }
+    
+    /**
      * Checks whether there are individuals listed as child in multiple families. 
      * If they have an adoption tag, that's OK. 
      * @param Gedcom $gedcom
@@ -363,6 +410,7 @@ class CheckController extends BaseController
      */
     private function marriageAgeStats($gedcom)
     {
+        //TODO: count marriages per person
         foreach ($gedcom->marriageAges() as $i)
         {
             $marriage_age = new GedcomStatsMarriages();
@@ -371,6 +419,10 @@ class CheckController extends BaseController
             $marriage_age->fami_id = $i->fami_id;
             $marriage_age->indi_id_husb = $i->indi_id_husb;
             $marriage_age->indi_id_wife = $i->indi_id_wife;
+            
+            $marriage_age->marr_cnt_husb = null;
+            $marriage_age->marr_cnt_wife = null;
+            
             $marriage_age->marr_age_husb = $i->marr_age_husb;
             $marriage_age->marr_age_wife = $i->marr_age_wife;
             $marriage_age->est_date_age_husb = $i->est_date_age_husb;

@@ -51,10 +51,20 @@
         </td>
     </tr>
     <tr>
-        <th>Marriage ages</th>
-        <td>Average: {{{ $statistics['avg_marriage_age'] }}}, 
-            Oldest: {{{ $statistics['max_marriage_age'] }}},
-            Youngest: {{{ $statistics['min_marriage_age'] }}}
+        <th>Husband marriage ages</th>
+        <td>Number: {{{ $statistics['cnt_marriage_age_husb'] }}}, 
+            Average: {{{ $statistics['avg_marriage_age_husb'] }}}, 
+            Oldest: {{{ $statistics['max_marriage_age_husb'] }}},
+            Youngest: {{{ $statistics['min_marriage_age_husb'] }}}
+            ({{ HTML::link('families/marriages/' . $gedcom->id, 'show') }})
+        </td>
+    </tr>
+    <tr> 
+        <th>Wife marriage ages</th>        
+        <td>Number: {{{ $statistics['cnt_marriage_age_wife'] }}}, 
+            Average: {{{ $statistics['avg_marriage_age_wife'] }}}, 
+            Oldest: {{{ $statistics['max_marriage_age_wife'] }}},
+            Youngest: {{{ $statistics['min_marriage_age_wife'] }}}
             ({{ HTML::link('families/marriages/' . $gedcom->id, 'show') }})
         </td>
     </tr>
