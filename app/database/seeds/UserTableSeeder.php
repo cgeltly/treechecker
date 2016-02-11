@@ -28,13 +28,6 @@ class UserTableSeeder extends Seeder
             'password'      => Hash::make('gedcomcheck')
         ));
         
-        User::create(array(
-            'first_name'    => 'Newt',
-            'last_name'     => 'Frog',
-            'role'          => 'typic',     
-            'email'         => 'newtfrog@newtfrog.com',
-            'password'      => Hash::make('gedcomcheck')
-        ));
     }
 
 }

@@ -75,23 +75,24 @@ class ParseGedcomController extends ParseController
             $geocode->town = null;
             $geocode->region = null;
             $geocode->country = null;
-            $geocode->lati = $eventPlace->lati;
-            $geocode->long = $eventPlace->long;
+            $geocode->lati = $eventPlace->latitude;
+            $geocode->long = $eventPlace->longitude;
             $geocode->checked = 0;
             $geocode->gedcom = 'See events table';
             $geocode->save();
-        }        
-
-        //update the events table geo_id with the geocodes table id 
+        }          
+        
+        
+        //update the events table geo_id to link to the geocodes table 
         //based on unique place, latitude and longitude 
         DB::statement("update `events` as `e` 
                         inner join `geocodes` as `g` 
-                        on `e`.`place` <=> `g`.`place` 
-                            AND `e`.`lati` <=> `g`.`lati`
-                            AND `e`.`long` <=> `g`.`long`                            
-                        set `e`.`geo_id` = `g`.`id`
-                        where `e`.`gedcom_id` = $gedcom_id");
-
+                        on `e`.`place` = `g`.`place` 
+                            set `e`.`geo_id` = `g`.`id`
+                        where `e`.`gedcom_id` = $gedcom_id AND `g`.`gedcom_id` = $gedcom_id
+                            AND `e`.`place` IS NOT NULL AND `g`.`place` IS NOT NULL
+                            AND `e`.`place` != '' AND `g`.`place`  != '' ");     
+        
         
         // Create the families in the familyMap
         foreach ($this->familyMap as $f => $r)
@@ -647,14 +648,17 @@ class ParseGedcomController extends ParseController
                 }
             }
         }
-
+        
+        //save to geocodes table
         $geocode = new GedcomGeocode();
         $geocode->gedcom_id = $gedcom_id;
         $geocode->place = utf8_encode($place);
         $geocode->lati = $latitude;
         $geocode->long = $longitude;
+        $geocode->checked = 0;         
         $geocode->gedcom = $gedrec;
         $geocode->save();
+ 
     }
 
     /*
@@ -800,7 +804,7 @@ class ParseGedcomController extends ParseController
                     'place' => utf8_encode($place),
                     'lati' => $latitude,
                     'long' => $longitude,
-                    'gedcom' => $fact->getGedcom(),
+                    'gedcom' => utf8_encode($fact->getGedcom()),
                     'created_at' => $time,
                     'updated_at' => $time,
                 );
@@ -1066,14 +1070,27 @@ class ParseGedcomController extends ParseController
         return $result;
     }
     
-    // Run a group by query to get unique place names from the events table.
+    /**
+     * Retrieve the places that exist in the events table, which do not already
+     * exist in the geocodes table (via a place definition)
+     * @param $gedcom_id
+     * @return array
+     */
     private function eventPlaces($gedcom_id)
     {
-        return DB::table('events')
-                        ->select('gedcom_id', 'id', 'place', 'lati', 'long')
-                        ->where('gedcom_id', $gedcom_id)
-                        ->groupBy('place', 'lati', 'long')
-                        ->get();
+        
+        return DB::select("SELECT `e`.`id` AS id, `e`.`gedcom_id` AS gedcom_id, 
+                    `e`.`place` AS place, `e`.`lati` AS latitude, 
+                    `e`.`long` AS longitude
+                    FROM 
+                    (SELECT `place` 
+                    FROM `geocodes` 
+                    WHERE `gedcom_id` = $gedcom_id) AS g
+                    RIGHT JOIN (SELECT `id`, `gedcom_id`, `place`, `lati`, `long`
+                    FROM `events` WHERE `gedcom_id` = $gedcom_id
+                    GROUP BY `place`) AS e
+                    ON `g`.`place` = `e`.`place`
+                    WHERE `g`.`place` IS NULL");
     }    
     
     /**

@@ -30,8 +30,6 @@ class CreateGeocodesTable extends Migration
             $table->timestamps();
             
             $table->foreign('gedcom_id')->references('id')->on('gedcoms')->onDelete('cascade');
-            $table->unique(array('gedcom_id', 'place', 'lati', 'long') );
-            
             $table->index('place');
         });
     }
